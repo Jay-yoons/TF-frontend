@@ -18,6 +18,16 @@
 
       <h1 class="store-name">{{ store.storeName }}</h1>
 
+      <!-- 가게 이미지 -->
+      <div class="store-image-container">
+        <img 
+          :src="getStoreImage(store.storeId)" 
+          :alt="store.storeName"
+          class="store-image"
+          @error="handleImageError"
+        />
+      </div>
+
       <div class="store-info-list">
         <div class="info-item">
           <strong>위치:</strong>
@@ -25,7 +35,13 @@
         </div>
         <div class="info-item">
           <strong>영업시간:</strong>
-          <span>{{ store.serviceTime }}</span>
+          <span>{{ formatBusinessHours(store.openTime, store.closeTime) }}</span>
+        </div>
+        <div class="info-item">
+          <strong>영업상태:</strong>
+          <span :class="['status-badge', { 'open': isStoreOpen(store.openTime, store.closeTime), 'closed': !isStoreOpen(store.openTime, store.closeTime) }]">
+            {{ isStoreOpen(store.openTime, store.closeTime) ? '영업중' : '영업종료' }}
+          </span>
         </div>
         <div class="info-item">
           <strong>전체 좌석:</strong>
@@ -55,6 +71,14 @@
           class="action-button review-button"
         >
           리뷰 보기
+        </router-link>
+
+        <router-link
+          v-if="userStore.isAuthenticated && hasBooking"
+          :to="{ name: 'ReviewCreate', params: { storeId: store.storeId } }"
+          class="action-button review-create-button"
+        >
+          리뷰 작성
         </router-link>
 
         <router-link
@@ -88,6 +112,7 @@ export default {
     const loading = ref(true);
     const error = ref(null);
     const isFavorite = ref(false);
+    const hasBooking = ref(false);
 
     const fetchStoreDetail = async () => {
       try {
@@ -136,6 +161,34 @@ export default {
       }
     };
 
+    const checkBookingStatus = async () => {
+      if (!userStore.isAuthenticated) {
+        hasBooking.value = false;
+        return;
+      }
+      try {
+        const storeId = route.params.storeId;
+        const idToken = localStorage.getItem('idToken');
+        
+        // 사용자의 예약 목록에서 해당 가게의 예약이 있는지 확인
+        const response = await axios.get(`/api/bookings/users/current`, {
+          headers: { Authorization: `Bearer ${idToken}` }
+        });
+        
+        // 해당 가게의 예약이 있는지 확인 (완료된 예약 포함)
+        const userBookings = response.data;
+        hasBooking.value = userBookings.some(booking => 
+          booking.storeId === storeId && 
+          (booking.bookingStateCode === 1 || booking.bookingStateCode === 2) // CONFIRMED 또는 COMPLETED
+        );
+        
+        console.log('예약 상태 확인:', hasBooking.value);
+      } catch (e) {
+        console.error("예약 상태 확인 실패:", e);
+        hasBooking.value = false;
+      }
+    };
+
     const toggleFavorite = async () => {
         if (!userStore.isAuthenticated) {
             alert("즐겨찾기 기능을 이용하려면 로그인이 필요합니다.");
@@ -168,15 +221,90 @@ export default {
     onMounted(async () => {
       await fetchStoreDetail();
       await checkFavoriteStatus();
+      await checkBookingStatus();
     });
+
+    // 영업시간 포맷팅 함수
+    const formatBusinessHours = (openTime, closeTime) => {
+      if (!openTime || !closeTime) return '영업시간 정보 없음';
+      
+      const formatTime = (timeStr) => {
+        if (!timeStr) return '';
+        const time = timeStr.split(':');
+        if (time.length >= 2) {
+          const hour = parseInt(time[0]);
+          const minute = time[1];
+          return `${hour.toString().padStart(2, '0')}:${minute}`;
+        }
+        return timeStr;
+      };
+      
+      return `${formatTime(openTime)} - ${formatTime(closeTime)}`;
+    };
+
+    // 영업중 여부 확인 함수
+    const isStoreOpen = (openTime, closeTime) => {
+      if (!openTime || !closeTime) return false;
+      
+      const now = new Date();
+      const currentTime = now.getHours() * 100 + now.getMinutes();
+      
+      const parseTime = (timeStr) => {
+        if (!timeStr) return 0;
+        const time = timeStr.split(':');
+        if (time.length >= 2) {
+          return parseInt(time[0]) * 100 + parseInt(time[1]);
+        }
+        return 0;
+      };
+      
+      const openTimeNum = parseTime(openTime);
+      const closeTimeNum = parseTime(closeTime);
+      
+      // 자정을 넘어가는 경우 (예: 22:00 - 02:00)
+      if (closeTimeNum < openTimeNum) {
+        return currentTime >= openTimeNum || currentTime <= closeTimeNum;
+      }
+      
+      return currentTime >= openTimeNum && currentTime <= closeTimeNum;
+    };
+
+    // 가게 이미지 URL 생성 함수
+    const getStoreImage = (storeId) => {
+      // 각 가게별 고유 이미지 URL 생성
+      const baseUrl = 'https://fog-object.s3.ap-northeast-2.amazonaws.com/store';
+      
+      // 가게별 이미지 매핑 (실제 가게 ID에 맞는 이미지 파일명)
+      const storeImages = {
+        'S001': `${baseUrl}/S001.png`,
+        'S002': `${baseUrl}/S002.png`,
+        'S003': `${baseUrl}/S003.png`,
+        'S004': `${baseUrl}/S004.png`,
+        'S005': `${baseUrl}/S005.png`
+      };
+      
+      // 매핑된 이미지가 있으면 사용, 없으면 기본 이미지 사용
+      return storeImages[storeId] || `${baseUrl}/S005.png`;
+    };
+
+    // 이미지 로드 실패 시 처리 함수
+    const handleImageError = (event) => {
+      // 기본 이미지로 대체
+      event.target.src = 'https://fog-object.s3.ap-northeast-2.amazonaws.com/store/S005.png';
+    };
 
     return {
       store,
       loading,
       error,
       isFavorite,
+      hasBooking,
       toggleFavorite,
-      userStore
+      userStore,
+      formatBusinessHours,
+      isStoreOpen,
+      getStoreImage,
+      handleImageError
     };
   },
 };
@@ -206,6 +334,26 @@ export default {
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 가게 이미지 스타일 */
+.store-image-container {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.store-image {
+  max-width: 100%;
+  width: 400px;
+  height: 250px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.store-image:hover {
+  transform: scale(1.02);
 }
 
 /* 즐겨찾기 아이콘 스타일 */
@@ -269,5 +417,34 @@ export default {
 }
 .my-review-button:hover {
   background-color: #45a049;
+}
+
+/* 리뷰 작성 버튼 */
+.review-create-button {
+  background-color: #2196f3;
+  color: #ffffff;
+}
+.review-create-button:hover {
+  background-color: #1976d2;
+}
+
+/* 영업상태 배지 스타일 */
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status-badge.open {
+  background-color: #4caf50;
+  color: white;
+}
+
+.status-badge.closed {
+  background-color: #f44336;
+  color: white;
 }
 </style>

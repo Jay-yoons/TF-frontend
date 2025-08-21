@@ -67,9 +67,14 @@
               <h3 class="store-name">{{ store.storeName }}</h3>
               <p class="store-location">{{ store.storeLocation }}</p>
                           <div class="store-info">
-              <span class="info-item">영업시간: {{ store.serviceTime }}</span>
+              <span class="info-item">영업시간: {{ formatBusinessHours(store.openTime, store.closeTime) }}</span>
               <span class="info-item">총 좌석: {{ store.seatNum }}석</span>
               <span class="info-item">카테고리: {{ getCategoryName(store.categoryCode) }}</span>
+              <span class="info-item">
+                <span :class="['status-badge', { 'open': isStoreOpen(store.openTime, store.closeTime), 'closed': !isStoreOpen(store.openTime, store.closeTime) }]">
+                  {{ isStoreOpen(store.openTime, store.closeTime) ? '영업중' : '영업종료' }}
+                </span>
+              </span>
             </div>
             <div class="store-actions">
               <span class="view-details">상세보기 →</span>
@@ -96,7 +101,11 @@
             >
               <h4>{{ store.storeName }}</h4>
               <p>{{ store.storeLocation }}</p>
+              <p class="business-hours">영업시간: {{ formatBusinessHours(store.openTime, store.closeTime) }}</p>
               <span class="store-category">{{ getCategoryName(store.categoryCode) }}</span>
+              <span :class="['status-badge', { 'open': isStoreOpen(store.openTime, store.closeTime), 'closed': !isStoreOpen(store.openTime, store.closeTime) }]">
+                {{ isStoreOpen(store.openTime, store.closeTime) ? '영업중' : '영업종료' }}
+              </span>
                           <div class="map-store-actions">
               <button @click.stop="openStoreModal(store)" class="action-btn primary">상세 정보</button>
             </div>
@@ -113,9 +122,24 @@
             <button @click="closeStoreModal" class="close-btn">&times;</button>
           </div>
           <div class="modal-body">
+            <!-- 가게 이미지 -->
+            <div class="modal-store-image-container">
+              <img 
+                :src="getStoreImage(selectedStore.storeId)" 
+                :alt="selectedStore.storeName"
+                class="modal-store-image"
+                @error="handleImageError"
+              />
+            </div>
+            
             <div class="store-details">
               <p><strong>위치:</strong> {{ selectedStore.storeLocation }}</p>
-              <p><strong>영업시간:</strong> {{ selectedStore.serviceTime }}</p>
+              <p><strong>영업시간:</strong> {{ formatBusinessHours(selectedStore.openTime, selectedStore.closeTime) }}</p>
+              <p><strong>영업상태:</strong> 
+                <span :class="['status-badge', { 'open': isStoreOpen(selectedStore.openTime, selectedStore.closeTime), 'closed': !isStoreOpen(selectedStore.openTime, selectedStore.closeTime) }]">
+                  {{ isStoreOpen(selectedStore.openTime, selectedStore.closeTime) ? '영업중' : '영업종료' }}
+                </span>
+              </p>
               <p><strong>총 좌석:</strong> {{ selectedStore.seatNum }}석</p>
               <p><strong>카테고리:</strong> {{ getCategoryName(selectedStore.categoryCode) }}</p>
             </div>
@@ -123,7 +147,7 @@
             <div v-if="userStore.isAuthenticated" class="store-actions-modal">
               <div class="action-buttons">
                 <button @click="goToBooking" class="action-btn primary">예약하기</button>
-                <button @click="goToReview" class="action-btn">리뷰 작성</button>
+                <button v-if="hasBooking" @click="goToReview" class="action-btn">리뷰 작성</button>
                 <button 
                   @click="toggleFavorite" 
                   :class="['action-btn', { 'favorite': isFavorite }]"
@@ -159,14 +183,32 @@ const map = ref(null);
 const markers = ref([]);
 const selectedStore = ref(null);
 const isFavorite = ref(false);
+const hasBooking = ref(false);
 const selectedCategory = ref('all');
+const mapBounds = ref(null); // 지도 범위를 추적하는 반응형 변수
 
 // 필터링된 가게 목록
 const filteredStores = computed(() => {
-  if (selectedCategory.value === 'all') {
-    return stores.value;
+  let filtered = stores.value;
+  
+  // 카테고리 필터링
+  if (selectedCategory.value !== 'all') {
+    filtered = filtered.filter(store => store.categoryCode === selectedCategory.value);
   }
-  return stores.value.filter(store => store.categoryCode === selectedCategory.value);
+  
+  // 지도 보기 모드일 때 지도 범위 내 가게만 필터링
+  if (viewMode.value === 'map' && mapBounds.value) {
+    filtered = filtered.filter(store => {
+      if (!store.latitude || !store.longitude) return false;
+      const position = {
+        lat: parseFloat(store.latitude),
+        lng: parseFloat(store.longitude)
+      };
+      return mapBounds.value.contains(position);
+    });
+  }
+  
+  return filtered;
 });
 
 const fetchStores = async () => {
@@ -191,6 +233,51 @@ const getCategoryName = (categoryCode) => {
     4: '카페/디저트'
   };
   return categories[categoryCode] || '기타';
+};
+
+// 영업시간 포맷팅 함수
+const formatBusinessHours = (openTime, closeTime) => {
+  if (!openTime || !closeTime) return '영업시간 정보 없음';
+  
+  const formatTime = (timeStr) => {
+    if (!timeStr) return '';
+    const time = timeStr.split(':');
+    if (time.length >= 2) {
+      const hour = parseInt(time[0]);
+      const minute = time[1];
+      return `${hour.toString().padStart(2, '0')}:${minute}`;
+    }
+    return timeStr;
+  };
+  
+  return `${formatTime(openTime)} - ${formatTime(closeTime)}`;
+};
+
+// 영업중 여부 확인 함수
+const isStoreOpen = (openTime, closeTime) => {
+  if (!openTime || !closeTime) return false;
+  
+  const now = new Date();
+  const currentTime = now.getHours() * 100 + now.getMinutes();
+  
+  const parseTime = (timeStr) => {
+    if (!timeStr) return 0;
+    const time = timeStr.split(':');
+    if (time.length >= 2) {
+      return parseInt(time[0]) * 100 + parseInt(time[1]);
+    }
+    return 0;
+  };
+  
+  const openTimeNum = parseTime(openTime);
+  const closeTimeNum = parseTime(closeTime);
+  
+  // 자정을 넘어가는 경우 (예: 22:00 - 02:00)
+  if (closeTimeNum < openTimeNum) {
+    return currentTime >= openTimeNum || currentTime <= closeTimeNum;
+  }
+  
+  return currentTime >= openTimeNum && currentTime <= closeTimeNum;
 };
 
 const initMap = () => {
@@ -224,6 +311,19 @@ const initMap = () => {
 
   console.log('지도 생성 완료');
 
+  // 지도 이벤트 리스너 추가
+  map.value.addListener('bounds_changed', () => {
+    // 지도 범위가 변경되면 가게 목록 업데이트
+    console.log('지도 범위 변경됨');
+    // 지도 범위 업데이트
+    mapBounds.value = map.value.getBounds();
+    // 지도 범위 변경 시 마커 다시 그리기
+    updateMapMarkers();
+  });
+
+  // 초기 지도 범위 설정
+  mapBounds.value = map.value.getBounds();
+  
   // 기존 마커들 제거
   markers.value.forEach(marker => marker.setMap(null));
   markers.value = [];
@@ -286,17 +386,121 @@ const moveToStore = (store) => {
   }
 };
 
+// 지도 마커 업데이트 함수
+const updateMapMarkers = () => {
+  if (!map.value) return;
+  
+  // 기존 마커들 제거
+  markers.value.forEach(marker => marker.setMap(null));
+  markers.value = [];
+  
+  // 필터링된 가게들에 대해 마커 추가
+  filteredStores.value.forEach((store) => {
+    if (store.latitude && store.longitude) {
+      const position = {
+        lat: parseFloat(store.latitude),
+        lng: parseFloat(store.longitude)
+      };
+      
+      const marker = new window.google.maps.Marker({
+        position: position,
+        map: map.value,
+        title: store.storeName,
+        icon: {
+          url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+          scaledSize: new window.google.maps.Size(32, 32)
+        }
+      });
+
+      // 정보창 추가
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `
+          <div style="padding: 10px; max-width: 200px;">
+            <h3 style="margin: 0 0 5px 0; font-size: 14px;">${store.storeName}</h3>
+            <p style="margin: 0 0 5px 0; font-size: 12px; color: #666;">${store.storeLocation}</p>
+            <p style="margin: 0 0 5px 0; font-size: 12px; color: #888;">${formatBusinessHours(store.openTime, store.closeTime)}</p>
+            <p style="margin: 0; font-size: 12px; color: ${isStoreOpen(store.openTime, store.closeTime) ? '#4caf50' : '#f44336'};">
+              ${isStoreOpen(store.openTime, store.closeTime) ? '영업중' : '영업종료'}
+            </p>
+          </div>
+        `
+      });
+
+      marker.addListener('click', () => {
+        infoWindow.open(map.value, marker);
+      });
+
+      markers.value.push(marker);
+    }
+  });
+};
+
 const openStoreModal = async (store) => {
   selectedStore.value = store;
   // 즐겨찾기 상태 확인
   if (userStore.isAuthenticated) {
     isFavorite.value = await userStore.isFavoriteStore(store.storeId);
+    await checkBookingStatus(store.storeId);
+  } else {
+    hasBooking.value = false;
   }
 };
 
 const closeStoreModal = () => {
   selectedStore.value = null;
   isFavorite.value = false;
+  hasBooking.value = false;
+};
+
+const checkBookingStatus = async (storeId) => {
+  if (!userStore.isAuthenticated) {
+    hasBooking.value = false;
+    return;
+  }
+  try {
+    const idToken = localStorage.getItem('idToken');
+    
+    // 사용자의 예약 목록에서 해당 가게의 예약이 있는지 확인
+    const response = await axios.get(`/api/bookings/users/current`, {
+      headers: { Authorization: `Bearer ${idToken}` }
+    });
+    
+    // 해당 가게의 예약이 있는지 확인 (완료된 예약 포함)
+    const userBookings = response.data;
+    hasBooking.value = userBookings.some(booking => 
+      booking.storeId === storeId && 
+      (booking.bookingStateCode === 1 || booking.bookingStateCode === 2) // CONFIRMED 또는 COMPLETED
+    );
+    
+    console.log('예약 상태 확인:', hasBooking.value);
+  } catch (e) {
+    console.error("예약 상태 확인 실패:", e);
+    hasBooking.value = false;
+  }
+};
+
+// 가게 이미지 URL 생성 함수
+const getStoreImage = (storeId) => {
+  // 각 가게별 고유 이미지 URL 생성
+  const baseUrl = 'https://fog-object.s3.ap-northeast-2.amazonaws.com/store';
+  
+  // 가게별 이미지 매핑 (실제 가게 ID에 맞는 이미지 파일명)
+  const storeImages = {
+    'S001': `${baseUrl}/S001.png`,
+    'S002': `${baseUrl}/S002.png`,
+    'S003': `${baseUrl}/S003.png`,
+    'S004': `${baseUrl}/S004.png`,
+    'S005': `${baseUrl}/S005.png`
+  };
+  
+  // 매핑된 이미지가 있으면 사용, 없으면 기본 이미지 사용
+  return storeImages[storeId] || `${baseUrl}/default-store.png`;
+};
+
+// 이미지 로드 실패 시 처리 함수
+const handleImageError = (event) => {
+  // 기본 이미지로 대체
+  event.target.src = 'https://fog-object.s3.ap-northeast-2.amazonaws.com/store/default-store.png';
 };
 
 const goToBooking = () => {
@@ -656,6 +860,21 @@ watch(selectedCategory, () => {
   padding: 20px;
 }
 
+/* 모달 내 가게 이미지 스타일 */
+.modal-store-image-container {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.modal-store-image {
+  max-width: 100%;
+  width: 400px;
+  height: 250px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
 .store-details p {
   margin: 8px 0;
   color: #666;
@@ -713,6 +932,41 @@ watch(selectedCategory, () => {
 
 .auth-notice {
   margin-top: 20px;
+}
+
+/* 영업상태 배지 스타일 */
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status-badge.open {
+  background-color: #4caf50;
+  color: white;
+}
+
+.status-badge.closed {
+  background-color: #f44336;
+  color: white;
+}
+
+/* 지도 사이드바 영업시간 스타일 */
+.business-hours {
+  font-size: 12px;
+  color: #666;
+  margin: 4px 0;
+}
+
+/* 가게 카드 영업상태 스타일 */
+.store-info .status-badge {
+  margin-left: 8px;
+}
+
+.auth-notice {
   padding: 15px;
   background: #f5f5f5;
   border-radius: 8px;
