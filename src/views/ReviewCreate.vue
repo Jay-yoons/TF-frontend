@@ -1,0 +1,166 @@
+<template>
+  <div class="review-create">
+    <h1>리뷰 작성</h1>
+    <div class="review-form">
+      <form @submit.prevent="submitReview">
+        <div class="form-group">
+          <label>별점 (1-5)</label>
+          <div class="rating">
+            <span v-for="n in 5" :key="n" @click="score = n" :class="{ 'filled-star': n <= score }">★</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="comment">리뷰 내용</label>
+          <textarea id="comment" v-model="comment" rows="5" required></textarea>
+        </div>
+        <button type="submit" class="submit-button">리뷰 제출</button>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script>
+import { ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import axios from 'axios';
+
+export default {
+  name: 'ReviewCreate',
+  setup() {
+    const route = useRoute();
+    const router = useRouter();
+    const score = ref(0);
+    const comment = ref('');
+
+    const submitReview = async () => {
+    // 이전처럼 'idToken'을 사용하도록 수정
+    const idToken = localStorage.getItem('idToken');
+    
+    if (!idToken) {
+      alert('리뷰를 작성하려면 로그인이 필요합니다.');
+      return;
+    }
+    if (score.value === 0) {
+      alert('별점을 선택해주세요.');
+      return;
+    }
+    
+    const reviewRequestDto = {
+      storeId: route.params.storeId,
+      comment: comment.value,
+      score: score.value,
+    };
+    
+    console.log("전송 데이터:", reviewRequestDto);
+
+    try {
+      const headers = { Authorization: `Bearer ${idToken}` };
+      const response = await axios.post('/api/reviews', reviewRequestDto, { headers });
+      
+      alert('리뷰가 성공적으로 작성되었습니다.');
+      
+      router.push({ name: 'ReviewDetail', params: { id: response.data.reviewId } });
+
+    } catch (error) {
+      console.error('리뷰 작성 실패:', error);
+      alert(`리뷰 작성에 실패했습니다: ${error.message}`);
+    }
+};
+
+    return {
+      score,
+      comment,
+      submitReview,
+    };
+  },
+};
+</script>
+
+<style scoped>
+.review-create {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Noto Sans KR', sans-serif;
+  text-align: center;
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.review-form {
+  margin-top: 20px;
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.form-group {
+  margin-bottom: 25px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  color: #777;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #333;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #ff5722;
+  box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.2);
+}
+
+.rating {
+  font-size: 36px;
+  cursor: pointer;
+  color: #ccc;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.rating span {
+  transition: color 0.2s ease;
+}
+
+.rating .filled-star {
+  color: #ff5722;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 15px;
+  background-color: #ff5722;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.submit-button:hover {
+  background-color: #e64a19;
+}
+</style>
