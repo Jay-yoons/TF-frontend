@@ -1,0 +1,37 @@
+name: Deploy Vue.js to S3 (OIDC)
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::733995297457:role/GitHub_Actions_Frontend
+          aws-region: ap-northeast-2
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create .env.production
+        run: |
+          echo "VUE_APP_GOOGLE_API_KEY=${{ secrets.VUE_APP_GOOGLE_MAP_API_KEY }}" >> .env.production
+
+      - name: Build Vue.js project
+        run: npm run build
+
+      - name: Deploy to S3
+        run: aws s3 sync ./dist s3://fog-frontend --delete
