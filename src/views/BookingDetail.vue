@@ -91,13 +91,6 @@ const cancelBooking = async () => {
     );
     console.log('예약 취소 성공:', cancelBookingResponse.data);
 
-    const decrementSeatResponse = await axios.post(
-      `/api/stores/${booking.value.storeId}/seats/decrement?count=${booking.value.count}`,
-      null,
-      { headers }
-    );
-    console.log('좌석 감소 성공:', decrementSeatResponse.data);
-
     alert('예약이 성공적으로 취소되었습니다');
 
     fetchBookingDetail(booking.value.bookingNum);

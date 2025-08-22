@@ -31,17 +31,17 @@ module.exports = defineConfig({
         loglevel: 'debug'
       },
       '/api/bookings': {
-        target: 'http://localhost:8083',
+        target: 'http://localhost:8087',
         changeOrigin: true,
         pathRewrite: {
           '^/api/bookings': '/bookings'
         },
-        loglevel: 'debug'
+        logLevel: 'debug'
       },
       '/bookings': {
-        target: 'http://localhost:8083',
+        target: 'http://localhost:8087',
         changeOrigin: true,
-        loglevel: 'debug'
+        logLevel: 'debug'
       },
       // 나머지 모든 /api 요청을 localhost:8085으로 프록시
       '/api': {

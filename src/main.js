@@ -16,14 +16,17 @@ const userStore = useUserStore();
 axios.interceptors.request.use(
   (config) => {
     const idToken = localStorage.getItem('idToken');
-    if (idToken) {
+
+    // 특정 경로는 Authorization 안 붙이게
+    const isPublicPath = config.url.includes('/bookings/seats/') || config.url.includes('/health');
+
+    if (!isPublicPath && idToken) {
       config.headers.Authorization = `Bearer ${idToken}`;
     }
+
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // 응답 인터셉터 - 401 에러 시 자동 로그아웃
