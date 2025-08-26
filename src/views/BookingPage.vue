@@ -89,15 +89,31 @@ export default {
       let currentHour = parseInt(openTime[0], 10);
       let closeHour = parseInt(closeTime[0], 10);
       let closeMinute = parseInt(closeTime[1], 10);
+      
+      const now = new Date();
+      const currentHours = now.getHours();
+      const currentDate = now.toISOString().slice(0, 10);
 
       // 종료 시간이 00:00일 경우 24:00으로 처리
       if (closeHour === 0 && closeMinute === 0) {
         closeHour = 24;
       }
-
+      
       while (currentHour < closeHour) {
         const hour = String(currentHour).padStart(2, '0');
-        options.push(`${hour}:00`);
+        const optionTime = `${hour}:00`;
+
+        // 오늘 날짜인 경우, 현재 시간 이후의 시간만 추가
+        if (reservationDate.value === currentDate) {
+          const optionHours = parseInt(hour, 10);
+          
+          if (optionHours > currentHours) {
+            options.push(optionTime);
+          }
+        } else {
+          // 오늘이 아닌 경우 모든 시간 추가
+          options.push(optionTime);
+        }
         currentHour += 2;
       }
       return options;

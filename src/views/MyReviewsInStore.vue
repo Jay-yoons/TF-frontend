@@ -35,9 +35,6 @@
       </div>
       <div v-else class="status-message">
         <p>이 가게에서 작성한 리뷰가 없습니다.</p>
-        <router-link :to="{ name: 'ReviewCreate', params: { storeId: storeId, bookingNum: 'new' } }" class="create-review-link">
-          리뷰 작성하기
-        </router-link>
       </div>
     </div>
   </div>

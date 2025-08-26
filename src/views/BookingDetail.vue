@@ -13,7 +13,7 @@
             {{ storeName }}
           </router-link>
         </div>
-        <div><strong>예약 날짜:</strong> {{ booking.bookingDate }}</div>
+        <div><strong>예약 날짜:</strong> {{ formatDateTime(booking.bookingDate) }}</div>
         <div><strong>예약 상태:</strong> {{ booking.bookingState }}</div>
         <div><strong>좌석 수:</strong> {{ booking.count }}</div>
       </div>
@@ -44,6 +44,15 @@ import axios from 'axios';
 const booking = ref(null);
 const storeName = ref('불러오는 중...'); // 가게 이름을 저장할 ref 추가
 const route = useRoute();
+
+// 날짜와 시간을 포맷하는 함수 추가
+const formatDateTime = (dateTimeStr) => {
+  if (!dateTimeStr) return '날짜 정보 없음';
+  const [date, time] = dateTimeStr.split('T');
+  if (!time) return date;
+  const formattedTime = time.substring(0, 5); // '13:00:00' -> '13:00'
+  return `${date} ${formattedTime}`;
+};
 
 // 예약 상세 정보를 가져오는 함수
 const fetchBookingDetail = async (bookingNum) => {

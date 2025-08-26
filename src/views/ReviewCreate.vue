@@ -86,33 +86,33 @@ export default {
         return;
       }
       
-      try {
-        const storeId = route.params.storeId;
+      // try {
+      //   const storeId = route.params.storeId;
         
-        // 사용자의 예약 목록에서 해당 가게의 예약이 있는지 확인
-        const response = await axios.get(`/api/bookings/users/current`, {
-          headers: { Authorization: `Bearer ${idToken}` }
-        });
+      //   // 사용자의 예약 목록에서 해당 가게의 예약이 있는지 확인
+      //   const response = await axios.get(`/api/bookings/users/current`, {
+      //     headers: { Authorization: `Bearer ${idToken}` }
+      //   });
         
-        // 해당 가게의 예약이 있는지 확인 (완료된 예약 포함)
-        const userBookings = response.data;
-        hasBooking.value = userBookings.some(booking => 
-          booking.storeId === storeId && 
-          (booking.bookingStateCode === 1 || booking.bookingStateCode === 2) // CONFIRMED 또는 COMPLETED
-        );
+      //   // 해당 가게의 예약이 있는지 확인 (완료된 예약 포함)
+      //   const userBookings = response.data;
+      //   hasBooking.value = userBookings.some(booking => 
+      //     booking.storeId === storeId && 
+      //     (booking.bookingStateCode === 2) // CONFIRMED 또는 COMPLETED
+      //   );
         
-        if (!hasBooking.value) {
-          alert('리뷰를 작성하려면 해당 가게에서 예약을 완료해야 합니다.');
-          router.push({ name: 'StoreDetail', params: { storeId: storeId } });
-          return;
-        }
-        
+      //   if (!hasBooking.value) {
+      //     alert('리뷰를 작성하려면 해당 가게에서 예약을 완료해야 합니다.');
+      //     router.push({ name: 'StoreDetail', params: { storeId: storeId } });
+      //     return;
+      //   }
+        hasBooking.value=true;
         loading.value = false;
-      } catch (e) {
-        console.error("예약 상태 확인 실패:", e);
-        alert('예약 정보를 확인할 수 없습니다.');
-        router.push({ name: 'StoreDetail', params: { storeId: route.params.storeId } });
-      }
+      // } catch (e) {
+      //   console.error("예약 상태 확인 실패:", e);
+      //   alert('예약 정보를 확인할 수 없습니다.');
+      //   router.push({ name: 'StoreDetail', params: { storeId: route.params.storeId } });
+      // }
     };
 
     // 페이지 로드 시 예약 여부 확인

@@ -18,10 +18,9 @@
 
       <h1 class="store-name">{{ store.storeName }}</h1>
 
-      <!-- 가게 이미지 -->
       <div class="store-image-container">
         <img 
-          :src="getStoreImage(store.storeId)" 
+          :src="store.imageUrl" 
           :alt="store.storeName"
           class="store-image"
           @error="handleImageError"
@@ -46,10 +45,6 @@
         <div class="info-item">
           <strong>전체 좌석:</strong>
           <span>{{ store.seatNum }}석</span>
-        </div>
-        <div class="info-item">
-          <strong>잔여 좌석:</strong>
-          <span>{{ store.availableSeats }}석</span>
         </div>
         <div class="info-item">
           <strong>리뷰 개수:</strong>
@@ -102,6 +97,7 @@ import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { useUserStore } from '@/stores/userStore';
+import { getCurrentUserId } from '@/utils/auth';
 
 export default {
   name: 'StoreDetail',
@@ -168,18 +164,22 @@ export default {
       }
       try {
         const storeId = route.params.storeId;
-        const idToken = localStorage.getItem('idToken');
         
         // 사용자의 예약 목록에서 해당 가게의 예약이 있는지 확인
-        const response = await axios.get(`/api/bookings/users/current`, {
-          headers: { Authorization: `Bearer ${idToken}` }
+        const userId = getCurrentUserId();
+        const accessToken = localStorage.getItem('accessToken');
+
+        const response = await axios.get(`/api/bookings/users/${userId}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         });
-        
-        // 해당 가게의 예약이 있는지 확인 (완료된 예약 포함)
+
+        // 해당 가게의 예약이 있는지 확인 (완료된 예약)
         const userBookings = response.data;
-        hasBooking.value = userBookings.some(booking => 
-          booking.storeId === storeId && 
-          (booking.bookingStateCode === 1 || booking.bookingStateCode === 2) // CONFIRMED 또는 COMPLETED
+        hasBooking.value = userBookings.some(booking =>
+          booking.storeId === storeId &&
+          (booking.bookingState === 2) //COMPLETED
         );
         
         console.log('예약 상태 확인:', hasBooking.value);
@@ -268,25 +268,7 @@ export default {
       
       return currentTime >= openTimeNum && currentTime <= closeTimeNum;
     };
-
-    // 가게 이미지 URL 생성 함수
-    const getStoreImage = (storeId) => {
-      // 각 가게별 고유 이미지 URL 생성
-      const baseUrl = 'https://fog-object.s3.ap-northeast-2.amazonaws.com/store';
-      
-      // 가게별 이미지 매핑 (실제 가게 ID에 맞는 이미지 파일명)
-      const storeImages = {
-        'S001': `${baseUrl}/S001.png`,
-        'S002': `${baseUrl}/S002.png`,
-        'S003': `${baseUrl}/S003.png`,
-        'S004': `${baseUrl}/S004.png`,
-        'S005': `${baseUrl}/S005.png`
-      };
-      
-      // 매핑된 이미지가 있으면 사용, 없으면 기본 이미지 사용
-      return storeImages[storeId] || `${baseUrl}/S005.png`;
-    };
-
+    
     // 이미지 로드 실패 시 처리 함수
     const handleImageError = (event) => {
       // 기본 이미지로 대체
@@ -303,7 +285,6 @@ export default {
       userStore,
       formatBusinessHours,
       isStoreOpen,
-      getStoreImage,
       handleImageError
     };
   },
@@ -345,7 +326,7 @@ export default {
 .store-image {
   max-width: 100%;
   width: 400px;
-  height: 250px;
+  height: auto;
   object-fit: cover;
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);

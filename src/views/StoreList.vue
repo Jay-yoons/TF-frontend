@@ -9,7 +9,6 @@
     <div v-else>
       <h1 class="title">가게 목록</h1>
       
-      <!-- 카테고리 필터 -->
       <div class="category-filter">
         <button 
           :class="['category-btn', { active: selectedCategory === 'all' }]" 
@@ -27,23 +26,28 @@
           :class="['category-btn', { active: selectedCategory === 2 }]" 
           @click="selectedCategory = 2"
         >
-          중식
+          일식
         </button>
         <button 
           :class="['category-btn', { active: selectedCategory === 3 }]" 
           @click="selectedCategory = 3"
         >
-          일식
+          양식
         </button>
         <button 
           :class="['category-btn', { active: selectedCategory === 4 }]" 
           @click="selectedCategory = 4"
         >
-          카페/디저트
+          중식
+        </button>
+        <button 
+          :class="['category-btn', { active: selectedCategory === 5 }]" 
+          @click="selectedCategory = 5"
+        >
+          카페
         </button>
       </div>
       
-      <!-- 지도와 목록 토글 버튼 -->
       <div class="view-toggle">
         <button 
           :class="['toggle-btn', { active: viewMode === 'list' }]" 
@@ -59,7 +63,6 @@
         </button>
       </div>
 
-      <!-- 목록 보기 -->
       <div v-if="viewMode === 'list'" class="list-view">
         <div v-if="filteredStores.length > 0" class="stores-grid">
           <div v-for="store in filteredStores" :key="store.storeId" class="store-card">
@@ -71,8 +74,8 @@
               <span class="info-item">총 좌석: {{ store.seatNum }}석</span>
               <span class="info-item">카테고리: {{ getCategoryName(store.categoryCode) }}</span>
               <span class="info-item">
-                <span :class="['status-badge', { 'open': isStoreOpen(store.openTime, store.closeTime), 'closed': !isStoreOpen(store.openTime, store.closeTime) }]">
-                  {{ isStoreOpen(store.openTime, store.closeTime) ? '영업중' : '영업종료' }}
+                <span :class="['status-badge', { 'open': store.openNow, 'closed': !store.openNow }]">
+                  {{ store.openStatus }}
                 </span>
               </span>
             </div>
@@ -87,7 +90,6 @@
         </div>
       </div>
 
-      <!-- 지도 보기 -->
       <div v-else-if="viewMode === 'map'" class="map-view">
         <div id="map" class="map-container"></div>
         <div class="map-sidebar">
@@ -103,8 +105,8 @@
               <p>{{ store.storeLocation }}</p>
               <p class="business-hours">영업시간: {{ formatBusinessHours(store.openTime, store.closeTime) }}</p>
               <span class="store-category">{{ getCategoryName(store.categoryCode) }}</span>
-              <span :class="['status-badge', { 'open': isStoreOpen(store.openTime, store.closeTime), 'closed': !isStoreOpen(store.openTime, store.closeTime) }]">
-                {{ isStoreOpen(store.openTime, store.closeTime) ? '영업중' : '영업종료' }}
+              <span :class="['status-badge', { 'open': store.openNow, 'closed': !store.openNow }]">
+                {{ store.openStatus }}
               </span>
                           <div class="map-store-actions">
               <button @click.stop="openStoreModal(store)" class="action-btn primary">상세 정보</button>
@@ -114,18 +116,16 @@
         </div>
       </div>
 
-      <!-- 가게 상세 모달 -->
       <div v-if="selectedStore" class="modal-overlay" @click="closeStoreModal">
         <div class="modal-content" @click.stop>
           <div class="modal-header">
             <h2>{{ selectedStore.storeName }}</h2>
-            <button @click="closeStoreModal" class="close-btn">&times;</button>
+            <button @click="closeStoreModal" class="close-btn">×</button>
           </div>
           <div class="modal-body">
-            <!-- 가게 이미지 -->
             <div class="modal-store-image-container">
               <img 
-                :src="getStoreImage(selectedStore.storeId)" 
+                :src="selectedStore.imageUrl" 
                 :alt="selectedStore.storeName"
                 class="modal-store-image"
                 @error="handleImageError"
@@ -136,8 +136,8 @@
               <p><strong>위치:</strong> {{ selectedStore.storeLocation }}</p>
               <p><strong>영업시간:</strong> {{ formatBusinessHours(selectedStore.openTime, selectedStore.closeTime) }}</p>
               <p><strong>영업상태:</strong> 
-                <span :class="['status-badge', { 'open': isStoreOpen(selectedStore.openTime, selectedStore.closeTime), 'closed': !isStoreOpen(selectedStore.openTime, selectedStore.closeTime) }]">
-                  {{ isStoreOpen(selectedStore.openTime, selectedStore.closeTime) ? '영업중' : '영업종료' }}
+                <span :class="['status-badge', { 'open': selectedStore.openNow, 'closed': !selectedStore.openNow }]">
+                  {{ selectedStore.openStatus }}
                 </span>
               </p>
               <p><strong>총 좌석:</strong> {{ selectedStore.seatNum }}석</p>
@@ -228,9 +228,10 @@ const fetchStores = async () => {
 const getCategoryName = (categoryCode) => {
   const categories = {
     1: '한식',
-    2: '중식', 
-    3: '일식',
-    4: '카페/디저트'
+    2: '일식', 
+    3: '양식',
+    4: '중식',
+    5: '카페'
   };
   return categories[categoryCode] || '기타';
 };
@@ -251,33 +252,6 @@ const formatBusinessHours = (openTime, closeTime) => {
   };
   
   return `${formatTime(openTime)} - ${formatTime(closeTime)}`;
-};
-
-// 영업중 여부 확인 함수
-const isStoreOpen = (openTime, closeTime) => {
-  if (!openTime || !closeTime) return false;
-  
-  const now = new Date();
-  const currentTime = now.getHours() * 100 + now.getMinutes();
-  
-  const parseTime = (timeStr) => {
-    if (!timeStr) return 0;
-    const time = timeStr.split(':');
-    if (time.length >= 2) {
-      return parseInt(time[0]) * 100 + parseInt(time[1]);
-    }
-    return 0;
-  };
-  
-  const openTimeNum = parseTime(openTime);
-  const closeTimeNum = parseTime(closeTime);
-  
-  // 자정을 넘어가는 경우 (예: 22:00 - 02:00)
-  if (closeTimeNum < openTimeNum) {
-    return currentTime >= openTimeNum || currentTime <= closeTimeNum;
-  }
-  
-  return currentTime >= openTimeNum && currentTime <= closeTimeNum;
 };
 
 const initMap = () => {
@@ -356,7 +330,10 @@ const initMap = () => {
           <div style="padding: 10px; max-width: 200px;">
             <h3 style="margin: 0 0 5px 0; font-size: 14px;">${store.storeName}</h3>
             <p style="margin: 0 0 5px 0; font-size: 12px; color: #666;">${store.storeLocation}</p>
-            <p style="margin: 0; font-size: 12px; color: #888;">${store.serviceTime}</p>
+            <p style="margin: 0 0 5px 0; font-size: 12px; color: #888;">${formatBusinessHours(store.openTime, store.closeTime)}</p>
+            <p style="margin: 0; font-size: 12px; color: ${store.openNow ? '#4caf50' : '#f44336'};">
+              ${store.openStatus}
+            </p>
           </div>
         `
       });
@@ -419,8 +396,8 @@ const updateMapMarkers = () => {
             <h3 style="margin: 0 0 5px 0; font-size: 14px;">${store.storeName}</h3>
             <p style="margin: 0 0 5px 0; font-size: 12px; color: #666;">${store.storeLocation}</p>
             <p style="margin: 0 0 5px 0; font-size: 12px; color: #888;">${formatBusinessHours(store.openTime, store.closeTime)}</p>
-            <p style="margin: 0; font-size: 12px; color: ${isStoreOpen(store.openTime, store.closeTime) ? '#4caf50' : '#f44336'};">
-              ${isStoreOpen(store.openTime, store.closeTime) ? '영업중' : '영업종료'}
+            <p style="margin: 0; font-size: 12px; color: ${store.openNow ? '#4caf50' : '#f44336'};">
+              ${store.openStatus}
             </p>
           </div>
         `
@@ -477,24 +454,6 @@ const checkBookingStatus = async (storeId) => {
     console.error("예약 상태 확인 실패:", e);
     hasBooking.value = false;
   }
-};
-
-// 가게 이미지 URL 생성 함수
-const getStoreImage = (storeId) => {
-  // 각 가게별 고유 이미지 URL 생성
-  const baseUrl = 'https://fog-object.s3.ap-northeast-2.amazonaws.com/store';
-  
-  // 가게별 이미지 매핑 (실제 가게 ID에 맞는 이미지 파일명)
-  const storeImages = {
-    'S001': `${baseUrl}/S001.png`,
-    'S002': `${baseUrl}/S002.png`,
-    'S003': `${baseUrl}/S003.png`,
-    'S004': `${baseUrl}/S004.png`,
-    'S005': `${baseUrl}/S005.png`
-  };
-  
-  // 매핑된 이미지가 있으면 사용, 없으면 기본 이미지 사용
-  return storeImages[storeId] || `${baseUrl}/default-store.png`;
 };
 
 // 이미지 로드 실패 시 처리 함수
@@ -868,8 +827,8 @@ watch(selectedCategory, () => {
 
 .modal-store-image {
   max-width: 100%;
-  width: 400px;
-  height: 250px;
+  width: 250px;
+  height: auto;
   object-fit: cover;
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);

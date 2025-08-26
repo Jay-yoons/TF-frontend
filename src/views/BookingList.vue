@@ -15,7 +15,7 @@
             </div>
             <div>
               <strong>예약 날짜</strong>
-              <span>{{ booking.bookingDate }}</span>
+              <span>{{ formatDateTime(booking.bookingDate) }}</span>
             </div>
             <div>
               <strong>예약 상태</strong>
@@ -39,61 +39,59 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { getCurrentUserId } from '@/utils/auth';
 
-export default {
-  name: 'BookingList',
-  setup() {
-    const bookings = ref([]);
-    const loading = ref(true);
-    const error = ref(null);
+const bookings = ref([]);
+const loading = ref(true);
+const error = ref(null);
 
-    const fetchBookings = async () => {
-      try {
-        const userId = getCurrentUserId();
-        const accessToken = localStorage.getItem('accessToken');
-
-        const response = await axios.get(`/api/bookings/users/${userId}`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-        
-        const bookingList = response.data;
-        
-        const fetchStoreNames = bookingList.map(async booking => {
-          try {
-            const storeNameResponse = await axios.get(`/api/stores/${booking.storeId}/name`);
-            return { ...booking, storeName: storeNameResponse.data };
-          } catch (e) {
-            console.error(`가게 이름(${booking.storeId})을 불러오는 데 실패했습니다.`, e);
-            return { ...booking, storeName: '알 수 없음' };
-          }
-        });
-        
-        bookings.value = await Promise.all(fetchStoreNames);
-
-      } catch (e) {
-        error.value = `예약 목록을 불러오는 데 실패했습니다: ${e.message}`;
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    onMounted(() => {
-      fetchBookings();
-    });
-
-    return {
-      bookings,
-      loading,
-      error,
-    };
-  },
+// 날짜와 시간을 포맷하는 함수 추가
+const formatDateTime = (dateTimeStr) => {
+  if (!dateTimeStr) return '날짜 정보 없음';
+  const [date, time] = dateTimeStr.split('T');
+  if (!time) return date;
+  const formattedTime = time.substring(0, 5); // '13:00:00' -> '13:00'
+  return `${date} ${formattedTime}`;
 };
+
+const fetchBookings = async () => {
+  try {
+    const userId = getCurrentUserId();
+    const accessToken = localStorage.getItem('accessToken');
+
+    const response = await axios.get(`/api/bookings/users/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    
+    const bookingList = response.data;
+    
+    const fetchStoreNames = bookingList.map(async booking => {
+      try {
+        const storeNameResponse = await axios.get(`/api/stores/${booking.storeId}/name`);
+        return { ...booking, storeName: storeNameResponse.data };
+      } catch (e) {
+        console.error(`가게 이름(${booking.storeId})을 불러오는 데 실패했습니다.`, e);
+        return { ...booking, storeName: '알 수 없음' };
+      }
+    });
+    
+    bookings.value = await Promise.all(fetchStoreNames);
+
+  } catch (e) {
+    error.value = `예약 목록을 불러오는 데 실패했습니다: ${e.message}`;
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchBookings();
+});
 </script>
 
 <style scoped>
