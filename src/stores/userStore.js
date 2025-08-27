@@ -115,11 +115,11 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    async handleCognitoCallback(code) {
+    async handleCognitoCallback(code, state) {
       this.loading = true;
       this.error = null;
       try {
-        const response = await axios.post('/api/users/login/callback', { code });
+        const response = await axios.post('/api/users/login/callback', { code, state });
         this.accessToken = response.data.accessToken;
         this.idToken = response.data.idToken;
         this.refreshToken = response.data.refreshToken;
