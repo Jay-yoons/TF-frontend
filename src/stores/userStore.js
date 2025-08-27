@@ -155,8 +155,6 @@ export const useUserStore = defineStore('user', {
       
       // 로그아웃 플로우 시작 플래그 설정
       sessionStorage.setItem('logoutInProgress', 'true');
-
-      const mainURL = process.env.VUE_APP_API_BASE_URL;
       
       try {
         // 1. 백엔드 로그아웃 API 호출
@@ -211,7 +209,7 @@ export const useUserStore = defineStore('user', {
         this.loading = false;
         
         // 7. AWS Cognito 세션 완전 종료를 위한 강제 로그아웃
-        const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=${mainURL}/logout`;
+        const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=talkingpotato.shop/logout`;
         
                         // 8. AWS Cognito 로그아웃 페이지로 이동하여 세션 완전 종료
                 window.location.href = cognitoLogoutUrl;
@@ -237,7 +235,7 @@ export const useUserStore = defineStore('user', {
         this.loading = false;
         
         // 오류 시에도 메인페이지로 이동
-        window.location.href = mainURL;
+        window.location.href = 'https://talkingpotato.shop';
       }
     },
 
