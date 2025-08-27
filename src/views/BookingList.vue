@@ -41,7 +41,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import axios from '@/api/axios';
 import { getCurrentUserId } from '@/utils/auth';
 
 const bookings = ref([]);

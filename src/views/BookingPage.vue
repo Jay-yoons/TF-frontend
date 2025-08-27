@@ -47,7 +47,7 @@
 <script>
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
+import axios from '@/api/axios';
 import { getCurrentUserId } from '@/utils/auth';
 
 export default {

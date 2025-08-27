@@ -73,7 +73,7 @@
 import { onMounted, ref } from 'vue';
 import { useUserStore } from '@/stores/userStore';
 import { displayPhoneNumber } from '@/utils/phoneFormatter';
-import axios from 'axios';
+import axios from '@/api/axios';
 
 const userStore = useUserStore();
 const user = ref(null);

@@ -34,7 +34,7 @@
 
 <script>
 import { useUserStore } from '@/stores/userStore';
-import axios from 'axios';
+import axios from '@/api/axios';
 
 export default {
   name: 'HomePage',

@@ -71,7 +71,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
+import axios from '@/api/axios';
 import { jwtDecode } from 'jwt-decode';
 
 const route = useRoute();

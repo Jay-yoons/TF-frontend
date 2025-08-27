@@ -44,7 +44,7 @@
 import { ref } from 'vue';
 import { useUserStore } from '@/stores/userStore';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import axios from '@/api/axios';
 import MessageModal from '@/components/MessageModal.vue';
 
 export default {

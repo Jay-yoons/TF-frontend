@@ -39,7 +39,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import axios from 'axios';
+import axios from '@/api/axios';
 
 const booking = ref(null);
 const storeName = ref('불러오는 중...'); // 가게 이름을 저장할 ref 추가

@@ -46,6 +46,7 @@
           <strong>전체 좌석:</strong>
           <span>{{ store.seatNum }}석</span>
         </div>
+
         <div class="info-item">
           <strong>리뷰 개수:</strong>
           <span>{{ store.reviewCount || 0 }}개</span>
@@ -95,9 +96,8 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import axios from 'axios';
+import axios from '@/api/axios';
 import { useUserStore } from '@/stores/userStore';
-import { getCurrentUserId } from '@/utils/auth';
 
 export default {
   name: 'StoreDetail',
@@ -164,22 +164,18 @@ export default {
       }
       try {
         const storeId = route.params.storeId;
+        const idToken = localStorage.getItem('idToken');
         
         // 사용자의 예약 목록에서 해당 가게의 예약이 있는지 확인
-        const userId = getCurrentUserId();
-        const accessToken = localStorage.getItem('accessToken');
-
-        const response = await axios.get(`/api/bookings/users/${userId}`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+        const response = await axios.get(`/api/bookings/users/current`, {
+          headers: { Authorization: `Bearer ${idToken}` }
         });
-
-        // 해당 가게의 예약이 있는지 확인 (완료된 예약)
+        
+        // 해당 가게의 예약이 있는지 확인 (완료된 예약 포함)
         const userBookings = response.data;
-        hasBooking.value = userBookings.some(booking =>
-          booking.storeId === storeId &&
-          (booking.bookingState === 2) //COMPLETED
+        hasBooking.value = userBookings.some(booking => 
+          booking.storeId === storeId && 
+          (booking.bookingStateCode === 1 || booking.bookingStateCode === 2) // CONFIRMED 또는 COMPLETED
         );
         
         console.log('예약 상태 확인:', hasBooking.value);

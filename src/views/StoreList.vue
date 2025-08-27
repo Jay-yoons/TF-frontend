@@ -170,7 +170,7 @@
 <script setup>
 import { ref, onMounted, nextTick, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import axios from '@/api/axios';
 import { useUserStore } from '@/stores/userStore';
 
 const userStore = useUserStore();
