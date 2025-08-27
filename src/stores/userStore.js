@@ -155,6 +155,8 @@ export const useUserStore = defineStore('user', {
       
       // 로그아웃 플로우 시작 플래그 설정
       sessionStorage.setItem('logoutInProgress', 'true');
+
+      const mainURL = process.env.VUE_APP_API_BASE_URL;
       
       try {
         // 1. 백엔드 로그아웃 API 호출
@@ -197,7 +199,6 @@ export const useUserStore = defineStore('user', {
           'XSRF-TOKEN', 'AWSELB', 'AWSELBCORS', 'amplify-authenticator-authToken'
         ];
         
-        const mainURL = process.env.VUE_APP_API_BASE_URL;
         cognitoCookies.forEach(cookieName => {
           document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
           document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=talkingpotato.shop;`;
