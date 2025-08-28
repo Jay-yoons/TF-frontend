@@ -45,6 +45,11 @@ export default {
       setTimeout(() => {
         try {
           document.body.removeChild(iframe)
+          // 로그아웃 완료 후 홈페이지로 이동
+          if (window.location.pathname !== '/') {
+            window.history.replaceState(null, '', '/')
+            window.dispatchEvent(new PopStateEvent('popstate'))
+          }
         } catch (e) {
           // ESLint no-empty 대응
           void 0

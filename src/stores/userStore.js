@@ -21,7 +21,7 @@ const buildLoginUrl = () =>
 const buildLogoutUrl = () =>
   `https://${COGNITO.domain}/logout` +
   `?client_id=${COGNITO.clientId}` +
-  `&logout_uri=${encodeURIComponent(COGNITO.signoutUri)}`; // <-- '?signedout=1' 파라미터 제거
+  `&logout_uri=${encodeURIComponent(COGNITO.signoutUri)}`; // 홈페이지로 리다이렉트
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -194,7 +194,20 @@ export const useUserStore = defineStore('user', {
         iframe.referrerPolicy = 'no-referrer';
         iframe.src = url;
         document.body.appendChild(iframe);
-        setTimeout(() => {try {document.body.removeChild(iframe) } catch(e){ void 0; } }, 3000 );
+        
+        // iframe 제거 후 홈페이지로 리다이렉트
+        setTimeout(() => {
+          try { 
+            document.body.removeChild(iframe);
+            // 로그아웃 완료 후 홈페이지로 이동
+            if (window.location.pathname !== '/') {
+              window.history.replaceState(null, '', '/');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }
+          } catch(e){ 
+            void 0; 
+          } 
+        }, 3000);
 
       } catch (e) {
         console.error('로그아웃 중 오류:', e);
@@ -208,7 +221,20 @@ export const useUserStore = defineStore('user', {
         iframe.referrerPolicy = 'no-referrer';
         iframe.src = url;
         document.body.appendChild(iframe);
-        setTimeout(() => { try { document.body.removeChild(iframe) } catch(e){ void 0; } }, 3000);
+        setTimeout(() => { 
+          try { 
+            document.body.removeChild(iframe);
+            // 오류 발생 시에도 홈페이지로 이동
+            if (window.location.pathname !== '/') {
+              window.history.replaceState(null, '', '/');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }
+          } catch(e){ 
+            void 0; 
+          } 
+        }, 3000);
+      } finally {
+        this.loading = false;
       }
     },
 

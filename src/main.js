@@ -20,6 +20,12 @@ import { useUserStore } from '@/stores/userStore';
     } catch { return false; }
   };
 
+  // 현재 URL이 /logout인 경우 즉시 홈으로 리다이렉트
+  if (window.location.pathname.replace(/\/+$/, '') === '/logout') {
+    history.replaceState(null, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+
   // a 태그 클릭 차단 (캡처 단계)
   document.addEventListener('click', (e) => {
     const a = e.target?.closest?.('a[href]');
@@ -80,6 +86,13 @@ import { useUserStore } from '@/stores/userStore';
       return _histReplace(state, title, url);
     };
   } catch (e) { void 0; }
+
+  // popstate 이벤트에서도 /logout 체크
+  window.addEventListener('popstate', () => {
+    if (window.location.pathname.replace(/\/+$/, '') === '/logout') {
+      history.replaceState(null, '', '/');
+    }
+  });
 })();
 
 (function blockCognitoLoginRedirects() {
