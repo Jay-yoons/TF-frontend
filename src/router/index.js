@@ -14,6 +14,7 @@ import ReviewCreate from '../views/ReviewCreate.vue';
 import CallbackPage from '../views/CallbackPage.vue';
 import MyPage from '../views/MyPage.vue';
 import MyReviewsInStore from '../views/MyReviewsInStore.vue';
+import routes from './routes';
 
 const routes = [
   {
