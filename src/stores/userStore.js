@@ -33,7 +33,8 @@ export const useUserStore = defineStore('user', {
   }),
   actions: {
     async initializeStore() {
-      if (window.location.pathname === '/logout' ){
+      const p = window.location.pathname.replace(/\/+$/, '');
+      if (p === '/logout' ){
         window.location.replace('/');
         return;
       }
