@@ -38,7 +38,7 @@ export const useUserStore = defineStore('user', {
         window.location.replace('/');
         return;
       }
-        
+
       // 로그아웃 후 자동 로그인 방지를 위한 추가 검증
       const isLogoutFlow = sessionStorage.getItem('logoutInProgress');
 
@@ -115,18 +115,7 @@ export const useUserStore = defineStore('user', {
         if (e.response && e.response.status === 401) {
           console.log("Authentication error (401). Clearing data without logout message.");
           // 401 오류 시에는 메시지 없이 데이터만 정리
-          this.user = null;
-          this.isAuthenticated = false;
-          this.favorites = [];
-          this.favoriteCount = 0;
-          this.accessToken = null;
-          this.refreshToken = null;
-          this.idToken = null;
-
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('idToken');
-          localStorage.removeItem('refreshToken');
-          sessionStorage.clear();
+          this.ClearAllData();
         } else {
           this.error = 'Failed to fetch user information.';
           console.error(e);
