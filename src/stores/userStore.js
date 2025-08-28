@@ -17,7 +17,7 @@ const buildLoginUrl = () =>
 const buildLogoutUrl = () =>
   `https://${COGNITO.domain}/logout` +
   `?client_id=${COGNITO.clientId}` +
-  `&logout_uri=${encodeURIComponent(COGNITO.signoutUri)}`;
+  `&logout_uri=${encodeURIComponent(COGNITO.signoutUri + '?signedout=1')}`;
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -33,9 +33,20 @@ export const useUserStore = defineStore('user', {
   }),
   actions: {
     async initializeStore() {
+      const params = new URLSearchParams(window.location.search);
+      const cameFromSignout = params.get('signout') === '1';
+
       const p = window.location.pathname.replace(/\/+$/, '');
       if (p === '/logout' ){
         window.location.replace('/');
+        return;
+      }
+
+      if (cameFromSignout){
+        sessionStorage.removeItem('logoutInProgress');
+        this.clearAllData();
+        // 주소창 정리 (?signout=1 제거)
+        history.replaceState({}, '', window.location.pathname);
         return;
       }
 
@@ -115,7 +126,7 @@ export const useUserStore = defineStore('user', {
         if (e.response && e.response.status === 401) {
           console.log("Authentication error (401). Clearing data without logout message.");
           // 401 오류 시에는 메시지 없이 데이터만 정리
-          this.ClearAllData();
+          this.clearAllData();
         } else {
           this.error = 'Failed to fetch user information.';
           console.error(e);

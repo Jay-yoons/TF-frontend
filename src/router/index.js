@@ -96,14 +96,24 @@ router.beforeEach((to, from, next) => {
   // 이 문제를 해결하기 위해 'router.isReady()'를 사용합니다.
   if (router.isReady()) {
     const userStore = useUserStore();
-    if (to.meta.requiresAuth && !userStore.isAuthenticated) {
-      next({ name: 'Login' });
-    } else {
-      next();
+
+    if(store.isAuthenticated === false && !store.user){
+        await store.initaializeStore();
     }
-  } else {
-    next();
+
+    if (to.path === '/logout') {
+        await store.logout();
+        return;
+    }
+
+    if (to.meta?.requiresAuth && !store.isAuthenticated) {
+      const loginUrl = await store.getLoginUrl();
+      window.location.href = loginUrl;
+      return;
+    }
   }
+
+  next();
 });
 
 export default router;
