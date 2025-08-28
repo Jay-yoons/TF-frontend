@@ -90,20 +90,30 @@ const router = createRouter({
   routes,
 });
 
+/**
+ * 1) /logout 흡수 가드 (항상 맨 위에 등록!)
+ * - 스토어 접근 없이 동작하므로 Pinia 설치 순서와 무관
+ */
 router.beforeEach((to, from, next) => {
-  // router.beforeEach는 'app.use(pinia)'가 실행되기 전에 호출될 수 있으므로,
-  // 여기서 'useUserStore()'를 직접 호출하면 오류가 발생합니다.
-  // 이 문제를 해결하기 위해 'router.isReady()'를 사용합니다.
-  if (router.isReady()) {
-    const userStore = useUserStore();
-    if (to.meta.requiresAuth && !userStore.isAuthenticated) {
-      next({ name: 'Login' });
-    } else {
-      next();
-    }
-  } else {
-    next();
+  const path = to.path.replace(/\/+$/, '').toLowerCase();
+  if (path === '/logout') {
+    // 홈으로 강제 이동, 히스토리에 /logout 남기지 않음
+    return next({ path: '/', replace: true });
   }
+  next();
+});
+
+/**
+ * 2) 인증 필요 라우트 보호 가드
+ * - 간단히 localStorage의 idToken으로 인증 여부 확인
+ *   (Pinia가 아직 활성 아니어도 안전하게 동작)
+ */
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = !!localStorage.getItem('idToken'); // 또는 accessToken
+  if (to.meta?.requiresAuth && !isAuthenticated) {
+    return next({ name: 'Login' }); // 라우트 이름 'Login'이 실제로 존재해야 함
+  }
+  next();
 });
 
 export default router;
