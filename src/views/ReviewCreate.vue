@@ -99,7 +99,7 @@ export default {
 
       try {
         const headers = { Authorization: `Bearer ${idToken}` };
-        const response = await axios.post('/api/reviews', reviewRequestDto, { headers });
+        await axios.post('/api/reviews', reviewRequestDto, { headers });
         
         showModalMessage('리뷰가 성공적으로 작성되었습니다!');
         
