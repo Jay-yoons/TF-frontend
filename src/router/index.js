@@ -14,7 +14,7 @@ import ReviewCreate from '../views/ReviewCreate.vue';
 import CallbackPage from '../views/CallbackPage.vue';
 import MyPage from '../views/MyPage.vue';
 import MyReviewsInStore from '../views/MyReviewsInStore.vue';
-import LogoutConfirm form '../views/LogoutConfirm.vue';
+import LogoutConfirm from '../views/LogoutConfirm.vue';
 
 const routes = [
   {
