@@ -29,16 +29,30 @@ axios.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// 응답 인터셉터 - 401 에러 시 자동 로그아웃
+// 응답 인터셉터 - 401 에러 시 자동 로그아웃 및 Cognito 로그인
 axios.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
     if (error.response && error.response.status === 401) {
       console.log('401 에러 감지. 자동 로그아웃 처리.');
       userStore.clearAllData();
-      router.push('/login');
+      
+      // AWS Cognito 로그인 URL로 리다이렉트
+      try {
+        const response = await fetch('/api/users/login/url');
+        if (response.ok) {
+          const { loginUrl } = await response.json();
+          window.location.href = loginUrl;
+          return;
+        }
+      } catch (fetchError) {
+        console.error('로그인 URL 가져오기 실패:', fetchError);
+      }
+      
+      // 로그인 URL 가져오기 실패 시 홈페이지로 리다이렉트
+      router.push({ name: 'HomePage' });
     }
     return Promise.reject(error);
   }
@@ -52,10 +66,23 @@ router.beforeEach(async (to, from, next) => {
         await userStore.initializeStore();
     }
 
-    // Redirect to login if a protected route is accessed without being authenticated.
+    // Redirect to Cognito login if a protected route is accessed without being authenticated.
     if (to.meta.requiresAuth && !userStore.isAuthenticated) {
-        console.log('User is not authenticated. Redirecting to login page.');
-        next({ name: 'Login' });
+        console.log('User is not authenticated. Redirecting to Cognito login.');
+        // AWS Cognito 로그인 URL로 리다이렉트
+        try {
+            const response = await fetch('/api/users/login/url');
+            if (response.ok) {
+                const { loginUrl } = await response.json();
+                window.location.href = loginUrl;
+                return;
+            }
+        } catch (error) {
+            console.error('로그인 URL 가져오기 실패:', error);
+        }
+        
+        // 로그인 URL 가져오기 실패 시 홈페이지로 리다이렉트
+        next({ name: 'HomePage' });
     } else {
         next();
     }
