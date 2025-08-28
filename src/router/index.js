@@ -1,8 +1,9 @@
 /* eslint-env browser */
 
 import { createRouter, createWebHistory } from 'vue-router';
-// eslint-disable-next-line no-unused-vars
-import { useUserStore } from '@/stores/userStore'; // 유지 원하신다고 하셔서 남겨두되, 가드에서는 미사용
+
+// 🔒 Pinia 의존 제거: CI에서 경로/미사용 변수로 실패하는 경우가 많아 일단 불러오지 않습니다.
+// import { useUserStore } from '@/stores/userStore';
 
 import HomePage from '../views/HomePage.vue';
 import BookingList from '../views/BookingList.vue';
@@ -39,9 +40,8 @@ const router = createRouter({
 
 /**
  * 1) /logout 흡수 가드 (항상 먼저 실행)
- *   - /logout(또는 /logout/) 진입 시 즉시 홈으로 돌립니다.
- *   - 히스토리에 /logout 안 남도록 replace 사용.
- *   - 세션 플래그를 남겨서 초기 진입 시 자동 로그인/재리다이렉트 루프 방지.
+ *   - /logout(또는 /logout/) 진입 시 즉시 홈으로 이동 (히스토리에 남기지 않음)
+ *   - 세션 플래그는 스토어에서 참고할 수 있도록 남김
  */
 router.beforeEach((to, from, next) => {
   const path = (to.path || '').replace(/\/+$/, '').toLowerCase();
@@ -53,20 +53,20 @@ router.beforeEach((to, from, next) => {
 });
 
 /**
- * 2) 인증 필요한 라우트 보호 가드
- *   - Pinia 초기화 순서 이슈 피하려고 localStorage만 사용.
- *   - 필요 시 'idToken' 대신 'accessToken'으로 바꿔도 됩니다.
- *   - 'Login' 라우트가 없다면 홈(/)로 돌리는 게 안전합니다.
+ * 2) 인증 필요한 라우트 보호 가드 (Pinia 의존 없음)
+ *   - localStorage의 idToken만 확인 (초기화 순서 이슈 방지)
+ *   - Login 라우트가 없다면 안전하게 홈(/)로 보냄
  */
 router.beforeEach((to, from, next) => {
   const requiresAuth = to.meta && to.meta.requiresAuth;
   let isAuthenticated = false;
-  if (typeof window !== 'undefined') {
+
+  if (typeof window !== 'undefined' && window.localStorage) {
     try { isAuthenticated = !!window.localStorage.getItem('idToken'); } catch (_) {}
   }
 
   if (requiresAuth && !isAuthenticated) {
-    return next({ name: 'Login' });
+    return next({ path: '/' });
   }
   next();
 });
