@@ -187,8 +187,14 @@ export const useUserStore = defineStore('user', {
           document.cookie = c.replace(/^ +/, '').replace(/=.*/, `=;expires=${new Date(0).toUTCString()};path=/`);
         });
 
-        // AWS Cognito 세션 종료를 위한 강제 리디렉션
-        window.location.href = buildLogoutUrl();
+        // AWS Cognito 세션 종료를 숨은 iframe으로 처리(화면 전환 없이)
+        const url = buildLogoutUrl();
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.referrerPolicy = 'no-referrer';
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        setTimeout(() => {try {document.body.removeChild(iframe) } catch(_){} }, 3000 );
 
       } catch (e) {
         console.error('로그아웃 중 오류:', e);
@@ -196,7 +202,13 @@ export const useUserStore = defineStore('user', {
         this.clearAllData({ keepLogoutFlag: true });
         this.loading = false;
         // 오류 발생 시에도 Cognito 로그아웃 URL로 이동하여 세션 종료 시도
-        window.location.href = buildLogoutUrl();
+        const url = buildLogoutUrl();
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.referrerPolicy = 'no-referrer';
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        setTimeout(() => { try { document.body.removeChild(iframe) } catch(_){} }, 3000);
       }
     },
 
