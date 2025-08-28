@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 // 'useUserStore'를 여기서 직접 import 하는 것은 유지합니다.
 import { useUserStore } from '@/stores/userStore';
+import store from '@/store'
 
 import HomePage from '../views/HomePage.vue';
 import BookingList from '../views/BookingList.vue';
@@ -90,20 +91,13 @@ const router = createRouter({
   routes,
 });
 
+// ✅ Pinia만 사용하도록 정리, 불필요한 router.isReady()/store 제거
 router.beforeEach((to, from, next) => {
-  // router.beforeEach는 'app.use(pinia)'가 실행되기 전에 호출될 수 있으므로,
-  // 여기서 'useUserStore()'를 직접 호출하면 오류가 발생합니다.
-  // 이 문제를 해결하기 위해 'router.isReady()'를 사용합니다.
-  if (router.isReady()) {
-    const userStore = useUserStore();
+  const userStore = useUserStore();
 
-    if(store.isAuth)
-
-    if (to.meta.requiresAuth && !userStore.isAuthenticated) {
-      next({ name: 'Login' });
-    } else {
-      next();
-    }
+  if (to.meta.requiresAuth && !userStore.isAuthenticated) {
+    // NOTE: 라우트에 'Login'이 없으므로 존재하는 'HomePage'로 보냅니다.
+    next({ name: 'HomePage' });
   } else {
     next();
   }
