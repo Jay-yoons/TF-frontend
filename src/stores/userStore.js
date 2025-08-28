@@ -34,7 +34,7 @@ export const useUserStore = defineStore('user', {
   actions: {
     async initializeStore() {
       if (window.location.pathname === '/logout' ){
-        window.location.replace('/';
+        window.location.replace('/');
         return;
       }
         
@@ -227,7 +227,7 @@ export const useUserStore = defineStore('user', {
         //const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=<URLEncoded(https://talkingpotato.shop/)>`;
 
         // 8. AWS Cognito 로그아웃 페이지로 이동하여 세션 완전 종료
-        window.location.href = buildLogoutUrl;
+        window.location.href = buildLogoutUrl();
 
       } catch (e) {
         console.error('로그아웃 중 오류:', e);
