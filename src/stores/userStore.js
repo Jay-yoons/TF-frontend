@@ -33,22 +33,6 @@ export const useUserStore = defineStore('user', {
   }),
   actions: {
     async initializeStore() {
-      const params = new URLSearchParams(window.location.search);
-      const cameFromSignout = params.get('signout') === '1';
-
-      const p = window.location.pathname.replace(/\/+$/, '');
-      if (p === '/logout' ){
-        window.location.replace('/');
-        return;
-      }
-
-      if (cameFromSignout){
-        sessionStorage.removeItem('logoutInProgress');
-        this.clearAllData();
-        // 주소창 정리 (?signout=1 제거)
-        history.replaceState({}, '', window.location.pathname);
-        return;
-      }
 
       // 로그아웃 후 자동 로그인 방지를 위한 추가 검증
       const isLogoutFlow = sessionStorage.getItem('logoutInProgress');

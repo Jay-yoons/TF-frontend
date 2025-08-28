@@ -97,23 +97,16 @@ router.beforeEach((to, from, next) => {
   if (router.isReady()) {
     const userStore = useUserStore();
 
-    if(store.isAuthenticated === false && !store.user){
-        await store.initaializeStore();
-    }
+    if(store.isAuth)
 
-    if (to.path === '/logout') {
-        await store.logout();
-        return;
+    if (to.meta.requiresAuth && !userStore.isAuthenticated) {
+      next({ name: 'Login' });
+    } else {
+      next();
     }
-
-    if (to.meta?.requiresAuth && !store.isAuthenticated) {
-      const loginUrl = await store.getLoginUrl();
-      window.location.href = loginUrl;
-      return;
-    }
+  } else {
+    next();
   }
-
-  next();
 });
 
 export default router;
