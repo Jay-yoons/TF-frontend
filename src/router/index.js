@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 // 'useUserStore'를 여기서 직접 import 하는 것은 유지합니다.
 import { useUserStore } from '@/stores/userStore';
-z
+
 import HomePage from '../views/HomePage.vue';
 import BookingList from '../views/BookingList.vue';
 import BookingDetail from '../views/BookingDetail.vue';
