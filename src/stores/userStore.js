@@ -1,23 +1,27 @@
 import { defineStore } from 'pinia';
 import axios from '@/api/axios';
 
-// ==== [추가] Cognito 설정 & URL 빌더 (반드시 encode) ====
+// ==== [수정] Cognito 설정 & URL 빌더 (반드시 encode) ====
 const COGNITO = Object.freeze({
   domain: 'ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com',
   clientId: 'k2q60p4rkctc3mpon0dui3v8h',
   redirectUri: 'https://talkingpotato.shop/callback', // 로그인 완료 후 돌아올 곳
   signoutUri: 'https://talkingpotato.shop/'           // 로그아웃 완료 후 돌아올 곳
 });
+
+// 로그인 URL 빌더
 const buildLoginUrl = () =>
   `https://${COGNITO.domain}/login` +
   `?client_id=${COGNITO.clientId}` +
   `&response_type=code` +
   `&redirect_uri=${encodeURIComponent(COGNITO.redirectUri)}` +
   `&scope=openid+email+profile`;
+
+// 로그아웃 URL 빌더
 const buildLogoutUrl = () =>
   `https://${COGNITO.domain}/logout` +
   `?client_id=${COGNITO.clientId}` +
-  `&logout_uri=${encodeURIComponent(COGNITO.signoutUri + '?signedout=1')}`;
+  `&logout_uri=${encodeURIComponent(COGNITO.signoutUri)}`; // <-- '?signedout=1' 파라미터 제거
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -32,12 +36,12 @@ export const useUserStore = defineStore('user', {
     idToken: null,
   }),
   actions: {
+    // ==== [수정] 불필요한 /logout 리디렉션 제거 ====
     async initializeStore() {
-
+      // 기존의 `/logout` 리디렉션 로직을 제거하여 불필요한 이동 방지
       // 로그아웃 후 자동 로그인 방지를 위한 추가 검증
       const isLogoutFlow = sessionStorage.getItem('logoutInProgress');
 
-      // 로그아웃 플로우 중이면 자동 로그인 방지
       if (isLogoutFlow === 'true') {
         console.log('로그아웃 플로우 감지. 자동 로그인 방지.');
         sessionStorage.removeItem('logoutInProgress');
@@ -49,15 +53,12 @@ export const useUserStore = defineStore('user', {
       this.idToken = localStorage.getItem('idToken');
       this.refreshToken = localStorage.getItem('refreshToken');
 
-      // 토큰이 있더라도 유효성을 검증
       if (this.idToken && this.accessToken) {
         try {
-          // 토큰 유효성 검증을 위해 사용자 정보 요청
           await this.fetchMyInfo();
           if (this.isAuthenticated && this.user) {
             console.log('토큰이 유효합니다. 사용자:', this.user.userName);
           } else {
-            // 토큰이 유효하지 않으면 로그아웃 처리
             console.log('토큰이 유효하지 않습니다. 로그아웃 처리 중...');
             this.clearAllData();
           }
@@ -71,7 +72,6 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // ==== [변경] 특정 키는 남겨둘 수 있게 옵션화 ====
     clearAllData({ keepLogoutFlag = false } = {}) {
       this.user = null;
       this.isAuthenticated = false;
@@ -85,12 +85,9 @@ export const useUserStore = defineStore('user', {
       localStorage.removeItem('idToken');
       localStorage.removeItem('refreshToken');
 
-      // 전체 clear 대신, 필요 키만 제거 (logoutInProgress는 유지 가능)
       if (!keepLogoutFlag) {
         sessionStorage.removeItem('logoutInProgress');
       }
-      // 다른 세션 키가 있으면 여기서 개별 제거
-      // sessionStorage.removeItem('someKey');
     },
 
     async fetchMyInfo() {
@@ -109,7 +106,6 @@ export const useUserStore = defineStore('user', {
       } catch (e) {
         if (e.response && e.response.status === 401) {
           console.log("Authentication error (401). Clearing data without logout message.");
-          // 401 오류 시에는 메시지 없이 데이터만 정리
           this.clearAllData();
         } else {
           this.error = 'Failed to fetch user information.';
@@ -120,7 +116,6 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // ==== [변경] 백엔드에 의존하지 말고 프론트에서 정확한 로그인 URL 생성 ====
     async getLoginUrl() {
       try {
         return buildLoginUrl();
@@ -144,13 +139,11 @@ export const useUserStore = defineStore('user', {
         localStorage.setItem('idToken', this.idToken);
         localStorage.setItem('refreshToken', this.refreshToken);
 
-        // 혹시 남아있다면 정리
         sessionStorage.removeItem('logoutInProgress');
 
         await this.fetchMyInfo();
       } catch (e) {
         this.error = 'Error during login process.';
-        // 로그인 실패 시에는 메시지 없이 데이터만 정리
         this.user = null;
         this.isAuthenticated = false;
         this.favorites = [];
@@ -168,50 +161,33 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+    // ==== [수정] 로그아웃 로직 정리 및 단순화 ====
     async logout() {
       this.loading = true;
-
-      // 로그아웃 플로우 시작 플래그 설정
       sessionStorage.setItem('logoutInProgress', 'true');
 
       try {
-        // 1. 백엔드 로그아웃 API 호출
+        // 백엔드 로그아웃 API 호출 (accessToken이 있다면)
         if (this.accessToken) {
           await axios.post('/api/users/logout', null, {
-            headers: {
-              Authorization: `Bearer ${this.accessToken}`
-            }
+            headers: { Authorization: `Bearer ${this.accessToken}` }
           });
         }
 
-        // 2. 모든 로컬 상태 초기화
+        // 로컬 상태 및 저장소 초기화
         this.clearAllData({ keepLogoutFlag: true });
 
-        // 3. 브라우저 캐시 완전 삭제
+        // 브라우저 캐시 및 쿠키 삭제
         if ('caches' in window) {
           const cacheNames = await caches.keys();
           await Promise.all(cacheNames.map(name => caches.delete(name)));
         }
 
-        // 4. 모든 쿠키 강제 삭제 (더 강력한 방법)
         document.cookie.split(';').forEach(c => {
-          document.cookie = c.replace(/^ +/, '')
-            .replace(/=.*/, `=;expires=${new Date(0).toUTCString()};path=/`);
-        });
-        ['talkingpotato.shop', '.talkingpotato.shop'].forEach(domain => {
-          ['accessToken','idToken','refreshToken','CognitoIdentityServiceProvider',
-           'XSRF-TOKEN','AWSELB','AWSELBCORS','amplify-authenticator-authToken']
-           .forEach(k => {
-             document.cookie = `${k}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${domain};`;
-           });
+          document.cookie = c.replace(/^ +/, '').replace(/=.*/, `=;expires=${new Date(0).toUTCString()};path=/`);
         });
 
-        this.loading = false;
-
-        // 7. AWS Cognito 세션 완전 종료를 위한 강제 로그아웃
-        //const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=<URLEncoded(https://talkingpotato.shop/)>`;
-
-        // 8. AWS Cognito 로그아웃 페이지로 이동하여 세션 완전 종료
+        // AWS Cognito 세션 종료를 위한 강제 리디렉션
         window.location.href = buildLogoutUrl();
 
       } catch (e) {
@@ -219,7 +195,8 @@ export const useUserStore = defineStore('user', {
         this.error = '로그아웃 중 문제가 발생했지만 클라이언트 상태는 초기화되었습니다.';
         this.clearAllData({ keepLogoutFlag: true });
         this.loading = false;
-        window.location.href = COGNITO.signoutUri;
+        // 오류 발생 시에도 Cognito 로그아웃 URL로 이동하여 세션 종료 시도
+        window.location.href = buildLogoutUrl();
       }
     },
 
