@@ -14,7 +14,6 @@ import ReviewCreate from '../views/ReviewCreate.vue';
 import CallbackPage from '../views/CallbackPage.vue';
 import MyPage from '../views/MyPage.vue';
 import MyReviewsInStore from '../views/MyReviewsInStore.vue';
-import routes from './routes';
 
 const routes = [
   {
@@ -96,7 +95,7 @@ const router = createRouter({
  * - 스토어 접근 없이 동작하므로 Pinia 설치 순서와 무관
  */
 router.beforeEach((to, from, next) => {
-  const path = to.path.replace(/\/+$/, '').toLowerCase();
+  const path = (to.path || '').replace(/\/+$/, '').toLowerCase();
   if (path === '/logout') {
     // 홈으로 강제 이동, 히스토리에 /logout 남기지 않음
     return next({ path: '/', replace: true });
@@ -110,9 +109,10 @@ router.beforeEach((to, from, next) => {
  *   (Pinia가 아직 활성 아니어도 안전하게 동작)
  */
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = !!localStorage.getItem('idToken'); // 또는 accessToken
-  if (to.meta?.requiresAuth && !isAuthenticated) {
-    return next({ name: 'Login' }); // 라우트 이름 'Login'이 실제로 존재해야 함
+  const requiresAuth = to.meta && to.meta.requiresAuth;
+  const isAuthenticated = typeof window !== 'undefined' && !!window.localStorage.getItem('idToken'); // 또는 accessToken
+  if (requiresAuth && !isAuthenticated) {
+    return next({ path: '/' }); // 라우트 이름 'Login'이 실제로 존재해야 함
   }
   next();
 });
