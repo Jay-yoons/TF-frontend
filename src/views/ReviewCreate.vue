@@ -143,23 +143,8 @@ export default {
     const checkBookingStatus = async () => {
       const idToken = localStorage.getItem('idToken');
       if (!idToken) {
-        showModalMessage('리뷰를 작성하려면 로그인이 필요합니다.');
-        // AWS Cognito 로그인으로 리다이렉트
-        try {
-          const response = await fetch('/api/users/login/url');
-          if (response.ok) {
-            const { loginUrl } = await response.json();
-            setTimeout(() => {
-              window.location.href = loginUrl;
-            }, 1500);
-            return;
-          }
-        } catch (error) {
-          console.error('로그인 URL 가져오기 실패:', error);
-          setTimeout(() => {
-            router.push({ name: 'HomePage' });
-          }, 1500);
-        }
+        alert('리뷰를 작성하려면 로그인이 필요합니다.');
+        router.push('/login');
         return;
       }
       

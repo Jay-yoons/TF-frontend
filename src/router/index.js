@@ -90,7 +90,7 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach((to, from, next) => {
   // router.beforeEach는 'app.use(pinia)'가 실행되기 전에 호출될 수 있으므로,
   // 여기서 'useUserStore()'를 직접 호출하면 오류가 발생합니다.
   // 이 문제를 해결하기 위해 'router.isReady()'를 사용합니다.
@@ -98,19 +98,6 @@ router.beforeEach(async (to, from, next) => {
     const userStore = useUserStore();
 
     if (to.meta.requiresAuth && !userStore.isAuthenticated) {
-      // AWS Cognito 로그인 URL을 가져와서 리다이렉트
-      try {
-        const response = await fetch('/api/users/login/url');
-        if (response.ok) {
-          const { loginUrl } = await response.json();
-          window.location.href = loginUrl;
-          return;
-        }
-      } catch (error) {
-        console.error('로그인 URL 가져오기 실패:', error);
-      }
-      
-      // 로그인 URL 가져오기 실패 시 홈페이지로 리다이렉트
       next({ name: 'HomePage' });
     } else {
       next();
