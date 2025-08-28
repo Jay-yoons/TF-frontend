@@ -144,19 +144,6 @@ app.use(router);
 // ============================
 // 라우터 가드
 // ============================
-router.beforeEach(async (to, from, next) => {
-  // 로컬 토큰이 있는데 스토어가 초기화 전이면 초기화
-  if (!userStore.isAuthenticated && localStorage.getItem('idToken')) {
-    await userStore.initializeStore();
-  }
-
-  if (to.meta.requiresAuth && !userStore.isAuthenticated) {
-    console.log('User is not authenticated. Redirecting to login page.');
-    next({ name: 'Login' });
-  } else {
-    next();
-  }
-});
 
 router.isReady().then(() => {
   app.mount('#app');

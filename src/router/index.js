@@ -14,7 +14,6 @@ import ReviewCreate from '../views/ReviewCreate.vue';
 import CallbackPage from '../views/CallbackPage.vue';
 import MyPage from '../views/MyPage.vue';
 import MyReviewsInStore from '../views/MyReviewsInStore.vue';
-import LogoutConfirm from '../views/LogoutConfirm.vue';
 
 const routes = [
   {
@@ -83,11 +82,6 @@ const routes = [
     meta: {
       requiresAuth: true
     }
-  },
-  {
-    path: '/logout',
-    name: 'Logout',
-    component: LogoutConfirm
   }
 ];
 
@@ -96,15 +90,23 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
-  const userStore = useUserStore();
-
-  if (to.meta.requiresAuth && !userStore.isAuthenticated) {
-    // NOTE: 라우트에 'Login'이 없으므로 존재하는 'HomePage'로 보냅니다.
-    next({ name: 'HomePage' });
-  } else {
-    next();
+router.beforeEach(async (to, from, next) => {
+  // 1) /logout 접근은 언제나 홈으로 우회
+  if (to.path.replace(/\/+$/, '') === '/logout') {
+    return next({ path: '/' });
   }
-});
 
+  // 2) 스토어 초기화(토큰만 있고 아직 미인증인 경우)
+  const userStore = useUserStore();
+  if (!userStore.isAuthenticated && localStorage.getItem('idToken')) {
+    try { await userStore.initializeStore(); } catch { /* noop */ }
+  }
+
+  // 3) 인증 필요한 라우트면 홈으로
+  if (to.meta.requiresAuth && !userStore.isAuthenticated) {
+    return next({ name: 'HomePage' });
+  }
+
+  next();
+});
 export default router;
