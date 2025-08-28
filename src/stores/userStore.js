@@ -33,6 +33,11 @@ export const useUserStore = defineStore('user', {
   }),
   actions: {
     async initializeStore() {
+      if (window.location.pathname === '/logout' ){
+        window.location.replace('/';
+        return;
+      }
+        
       // 로그아웃 후 자동 로그인 방지를 위한 추가 검증
       const isLogoutFlow = sessionStorage.getItem('logoutInProgress');
 
