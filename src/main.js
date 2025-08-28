@@ -7,58 +7,77 @@ import axios from '@/api/axios';
 import { useUserStore } from '@/stores/userStore';
 
 /* ============================================
-   💥 전역 차단기: Cognito /login?…&logout_uri=… 로의 상위창 이동 완전 봉쇄
-   - a 태그 클릭
-   - window.open
-   - location.assign / location.replace
+   💥 전역 차단기 #1: "앱 내부" /logout 으로의 이동 완전 봉쇄
+   - a태그 클릭, window.open, location.assign/replace,
+     history.pushState/replaceState 까지 차단
    ============================================ */
-(function blockCognitoLoginRedirects() {
-  const re = /https:\/\/[^/]*\.auth\.[^/]*\.amazoncognito\.com\/login\?.*logout_uri=/i;
+(function blockAppLogoutPath() {
+  const isLogoutUrl = (url) => {
+    try {
+      const u = typeof url === 'string' ? new URL(url, window.location.href) : url;
+      return u.origin === window.location.origin &&
+             u.pathname.replace(/\/+$/, '') === '/logout';
+    } catch { return false; }
+  };
 
-  // a 태그 클릭 차단(캡처 단계 선점)
-  document.addEventListener(
-    'click',
-    (e) => {
-      const a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-      if (!a) return;
-      const href = a.getAttribute('href') || '';
-      if (re.test(href)) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        try {
-          router.push({ name: 'Logout' });
-        } catch (err) {
-          try { router.push('/logout'); } catch (_) { /* noop */ }
-        }
-      }
-    },
-    true
-  );
+  // a 태그 클릭 차단 (캡처 단계)
+  document.addEventListener('click', (e) => {
+    const a = e.target?.closest?.('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href') || '';
+    if (isLogoutUrl(href)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      // 곧바로 홈으로
+      history.replaceState(null, '', '/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  }, true);
 
   // window.open 차단
   try {
     const _open = window.open;
     window.open = function (url, ...rest) {
-      if (typeof url === 'string' && re.test(url)) return null;
+      if (typeof url === 'string' && isLogoutUrl(url)) return null;
       return _open.call(window, url, ...rest);
     };
   } catch (e) { void 0; }
 
-  // location.assign 차단
+  // location.assign / replace 차단
   try {
     const _assign = window.location.assign.bind(window.location);
     window.location.assign = (url) => {
-      if (typeof url === 'string' && re.test(url)) return;
+      if (typeof url === 'string' && isLogoutUrl(url)) {
+        history.replaceState(null, '', '/');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+        return;
+      }
       return _assign(url);
     };
   } catch (e) { void 0; }
-
-  // location.replace 차단
   try {
     const _replace = window.location.replace.bind(window.location);
     window.location.replace = (url) => {
-      if (typeof url === 'string' && re.test(url)) return;
+      if (typeof url === 'string' && isLogoutUrl(url)) {
+        history.replaceState(null, '', '/');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+        return;
+      }
       return _replace(url);
+    };
+  } catch (e) { void 0; }
+
+  // history.pushState / replaceState 차단
+  try {
+    const _push = history.pushState.bind(history);
+    history.pushState = (state, title, url) => {
+      if (isLogoutUrl(url)) return _push(state, title, '/');
+      return _push(state, title, url);
+    };
+    const _histReplace = history.replaceState.bind(history);
+    history.replaceState = (state, title, url) => {
+      if (isLogoutUrl(url)) return _histReplace(state, title, '/');
+      return _histReplace(state, title, url);
     };
   } catch (e) { void 0; }
 })();
