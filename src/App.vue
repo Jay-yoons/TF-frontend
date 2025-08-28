@@ -115,8 +115,8 @@ export default {
       }
     };
 
-    const logout = () => {
-      userStore.logout();
+    const logout = async () => {
+      await userStore.logout();
       showMessageModal(
         '로그아웃 완료',
         '안전하게 로그아웃되었습니다.',
