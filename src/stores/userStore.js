@@ -194,7 +194,7 @@ export const useUserStore = defineStore('user', {
         iframe.referrerPolicy = 'no-referrer';
         iframe.src = url;
         document.body.appendChild(iframe);
-        setTimeout(() => {try {document.body.removeChild(iframe) } catch(_){} }, 3000 );
+        setTimeout(() => {try {document.body.removeChild(iframe) } catch(e){ void 0; } }, 3000 );
 
       } catch (e) {
         console.error('로그아웃 중 오류:', e);
@@ -208,7 +208,7 @@ export const useUserStore = defineStore('user', {
         iframe.referrerPolicy = 'no-referrer';
         iframe.src = url;
         document.body.appendChild(iframe);
-        setTimeout(() => { try { document.body.removeChild(iframe) } catch(_){} }, 3000);
+        setTimeout(() => { try { document.body.removeChild(iframe) } catch(e){ void 0; } }, 3000);
       }
     },
 
