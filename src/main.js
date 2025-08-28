@@ -46,6 +46,64 @@ axios.interceptors.response.use(
 
 app.use(router);
 
+
+// =========================
+// 💥 전역 차단기: Cognito /login?…&logout_uri=… 로의 상위창 이동 완전 봉쇄
+//  - a 태그 클릭
+//  - window.open
+//  - location.assign / location.replace
+// =========================
+(function blockCognitoLoginRedirects() {
+  const re = /https:\/\/[^/]*\.auth\.[^/]*\.amazoncognito\.com\/login\?.*logout_uri=/i;
+
+  // 1) a 태그 클릭 가로채기 (캡처 단계)
+  document.addEventListener(
+    'click',
+    (e) => {
+      const a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if (!a) return;
+      const href = a.getAttribute('href') || '';
+      if (re.test(href)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        try {
+          router.push({ name: 'Logout' });
+        } catch (err) {
+          try { router.push('/logout'); } catch (_) { /* noop */ }
+        }
+      }
+    },
+    true
+  );
+
+  // 2) window.open 차단
+  try {
+    const _open = window.open;
+    window.open = function (url, ...rest) {
+      if (typeof url === 'string' && re.test(url)) return null;
+      return _open.call(window, url, ...rest);
+    };
+  } catch (e) { void 0; }
+
+  // 3) location.assign 차단
+  try {
+    const _assign = window.location.assign.bind(window.location);
+    window.location.assign = (url) => {
+      if (typeof url === 'string' && re.test(url)) return;
+      return _assign(url);
+    };
+  } catch (e) { void 0; }
+
+  // 4) location.replace 차단
+  try {
+    const _replace = window.location.replace.bind(window.location);
+    window.location.replace = (url) => {
+      if (typeof url === 'string' && re.test(url)) return;
+      return _replace(url);
+    };
+  } catch (e) { void 0; }
+})();
+
 router.beforeEach(async (to, from, next) => {
     // Check localStorage for idToken to initialize the store and authentication state.
     if (!userStore.isAuthenticated && localStorage.getItem('idToken')) {
