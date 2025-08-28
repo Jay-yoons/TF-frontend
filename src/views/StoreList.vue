@@ -489,23 +489,6 @@ const checkReviewStatus = async (storeId) => {
   try {
     const idToken = localStorage.getItem('idToken');
     
-    // 사용자의 예약 목록에서 해당 가게의 예약이 있는지 확인
-    const bookingResponse = await axios.get(`/api/bookings/users/current`, {
-      headers: { Authorization: `Bearer ${idToken}` }
-    });
-    
-    // 해당 가게의 완료된 예약들 확인
-    const userBookings = bookingResponse.data;
-    const completedBookings = userBookings.filter(booking => 
-      booking.storeId === storeId && 
-      (booking.bookingStateCode === 1 || booking.bookingStateCode === 2) // CONFIRMED 또는 COMPLETED
-    );
-    
-    if (completedBookings.length === 0) {
-      hasBooking.value = false;
-      return;
-    }
-    
     // 리뷰 작성 여부 확인
     const reviewResponse = await axios.get(`/api/reviews/store/${storeId}`, {
       headers: { Authorization: `Bearer ${idToken}` }
@@ -516,14 +499,13 @@ const checkReviewStatus = async (storeId) => {
       review.userId === userStore.user?.userId
     ).length;
     
-    // 완료된 예약 수와 리뷰 수를 비교
-    // 리뷰 수가 예약 수보다 적으면 새로운 리뷰 작성 가능
-    if (userReviewCount < completedBookings.length) {
-      hasBooking.value = true;
-      console.log('새로운 리뷰 작성 가능:', completedBookings.length, '개 예약,', userReviewCount, '개 리뷰');
-    } else {
+    // 이미 리뷰를 작성했다면 버튼 비활성화
+    if (userReviewCount > 0) {
       hasBooking.value = false;
-      console.log('모든 예약에 대해 리뷰 작성 완료');
+      console.log('이미 리뷰를 작성했습니다:', userReviewCount, '개 리뷰');
+    } else {
+      hasBooking.value = true;
+      console.log('리뷰 작성 가능');
     }
     
   } catch (e) {
