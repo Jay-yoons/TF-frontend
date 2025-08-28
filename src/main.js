@@ -22,9 +22,30 @@ import { useUserStore } from '@/stores/userStore';
 
   // 현재 URL이 /logout인 경우 즉시 홈으로 리다이렉트
   if (window.location.pathname.replace(/\/+$/, '') === '/logout') {
+    console.log('🚫 /logout 경로 감지! 즉시 홈으로 리다이렉트');
     history.replaceState(null, '', '/');
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
+
+  // 모든 URL 변경을 감지하여 /logout 차단
+  const originalPushState = history.pushState;
+  const originalReplaceState = history.replaceState;
+  
+  history.pushState = function(state, title, url) {
+    if (url && url.toString().includes('/logout')) {
+      console.log('🚫 pushState에서 /logout 차단:', url);
+      url = '/';
+    }
+    return originalPushState.call(this, state, title, url);
+  };
+  
+  history.replaceState = function(state, title, url) {
+    if (url && url.toString().includes('/logout')) {
+      console.log('🚫 replaceState에서 /logout 차단:', url);
+      url = '/';
+    }
+    return originalReplaceState.call(this, state, title, url);
+  };
 
   // a 태그 클릭 차단 (캡처 단계)
   document.addEventListener('click', (e) => {
@@ -34,6 +55,7 @@ import { useUserStore } from '@/stores/userStore';
     if (isLogoutUrl(href)) {
       e.preventDefault();
       e.stopImmediatePropagation();
+      console.log('🚫 a태그 /logout 클릭 차단');
       // 곧바로 홈으로
       history.replaceState(null, '', '/');
       window.dispatchEvent(new PopStateEvent('popstate'));
@@ -44,7 +66,10 @@ import { useUserStore } from '@/stores/userStore';
   try {
     const _open = window.open;
     window.open = function (url, ...rest) {
-      if (typeof url === 'string' && isLogoutUrl(url)) return null;
+      if (typeof url === 'string' && isLogoutUrl(url)) {
+        console.log('🚫 window.open /logout 차단');
+        return null;
+      }
       return _open.call(window, url, ...rest);
     };
   } catch (e) { void 0; }
@@ -54,6 +79,7 @@ import { useUserStore } from '@/stores/userStore';
     const _assign = window.location.assign.bind(window.location);
     window.location.assign = (url) => {
       if (typeof url === 'string' && isLogoutUrl(url)) {
+        console.log('🚫 location.assign /logout 차단');
         history.replaceState(null, '', '/');
         window.dispatchEvent(new PopStateEvent('popstate'));
         return;
@@ -65,6 +91,7 @@ import { useUserStore } from '@/stores/userStore';
     const _replace = window.location.replace.bind(window.location);
     window.location.replace = (url) => {
       if (typeof url === 'string' && isLogoutUrl(url)) {
+        console.log('🚫 location.replace /logout 차단');
         history.replaceState(null, '', '/');
         window.dispatchEvent(new PopStateEvent('popstate'));
         return;
@@ -73,26 +100,28 @@ import { useUserStore } from '@/stores/userStore';
     };
   } catch (e) { void 0; }
 
-  // history.pushState / replaceState 차단
-  try {
-    const _push = history.pushState.bind(history);
-    history.pushState = (state, title, url) => {
-      if (isLogoutUrl(url)) return _push(state, title, '/');
-      return _push(state, title, url);
-    };
-    const _histReplace = history.replaceState.bind(history);
-    history.replaceState = (state, title, url) => {
-      if (isLogoutUrl(url)) return _histReplace(state, title, '/');
-      return _histReplace(state, title, url);
-    };
-  } catch (e) { void 0; }
-
   // popstate 이벤트에서도 /logout 체크
   window.addEventListener('popstate', () => {
     if (window.location.pathname.replace(/\/+$/, '') === '/logout') {
+      console.log('🚫 popstate에서 /logout 감지! 홈으로 리다이렉트');
       history.replaceState(null, '', '/');
     }
   });
+
+  // URL 변경 감지 (MutationObserver 사용)
+  const observer = new MutationObserver(() => {
+    if (window.location.pathname.replace(/\/+$/, '') === '/logout') {
+      console.log('🚫 MutationObserver에서 /logout 감지! 홈으로 리다이렉트');
+      history.replaceState(null, '', '/');
+    }
+  });
+  
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  console.log('🚫 /logout 경로 차단기 활성화 완료');
 })();
 
 (function blockCognitoLoginRedirects() {

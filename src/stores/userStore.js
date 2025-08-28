@@ -21,14 +21,30 @@ const buildLoginUrl = () =>
 const buildLogoutUrl = () => {
   // logout_uri를 절대적으로 홈페이지로 설정 (절대 /logout이 붙지 않도록)
   const logoutUri = 'https://talkingpotato.shop';
+  
+  // 추가 검증: /logout이 포함되어 있으면 즉시 제거
+  let cleanLogoutUri = logoutUri;
+  if (cleanLogoutUri.includes('/logout')) {
+    console.log('🚫 [WARNING] logout_uri에 /logout이 포함됨! 제거 중...');
+    cleanLogoutUri = cleanLogoutUri.replace(/\/logout.*$/, '');
+  }
+  
   const url = `https://${COGNITO.domain}/logout` +
     `?client_id=${COGNITO.clientId}` +
-    `&logout_uri=${encodeURIComponent(logoutUri)}`;
+    `&logout_uri=${encodeURIComponent(cleanLogoutUri)}`;
   
   console.log('🔍 [DEBUG] buildLogoutUrl() 호출됨');
   console.log('🔍 [DEBUG] COGNITO.signoutUri:', COGNITO.signoutUri);
-  console.log('🔍 [DEBUG] 최종 logout_uri:', logoutUri);
+  console.log('🔍 [DEBUG] 원본 logout_uri:', logoutUri);
+  console.log('🔍 [DEBUG] 정리된 logout_uri:', cleanLogoutUri);
   console.log('🔍 [DEBUG] 생성된 전체 URL:', url);
+  console.log('🔍 [DEBUG] URL에 /logout이 포함되어 있는지 확인:', url.includes('/logout'));
+  
+  // 최종 검증: URL에 /logout이 포함되어 있으면 오류 발생
+  if (url.includes('/logout')) {
+    console.error('🚫 [CRITICAL] 생성된 URL에 여전히 /logout이 포함됨!');
+    throw new Error('logout_uri에 /logout이 포함되어 있습니다!');
+  }
   
   return url;
 };
