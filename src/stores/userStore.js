@@ -1,6 +1,73 @@
 import { defineStore } from 'pinia';
 import axios from '@/api/axios';
 
+// ==== [수정] Cognito 설정 & URL 빌더 (반드시 encode) ====
+const COGNITO = Object.freeze({
+  domain: 'ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com',
+  clientId: 'k2q60p4rkctc3mpon0dui3v8h',
+  redirectUri: 'https://talkingpotato.shop/callback', // 로그인 완료 후 돌아올 곳
+  signoutUri: 'https://talkingpotato.shop'           // 로그아웃 완료 후 돌아올 곳 (끝에 / 제거)
+});
+
+// 로그인 URL 빌더
+const buildLoginUrl = () =>
+  `https://${COGNITO.domain}/login` +
+  `?client_id=${COGNITO.clientId}` +
+  `&response_type=code` +
+  `&redirect_uri=${encodeURIComponent(COGNITO.redirectUri)}` +
+  `&scope=openid+email+profile`;
+
+// 로그아웃 URL 빌더
+const buildLogoutUrl = () => {
+  console.log('🔍 [DEBUG] ===== buildLogoutUrl() 함수 시작 =====');
+  
+  // logout_uri를 절대적으로 홈페이지로 설정 (절대 /logout이 붙지 않도록)
+  const logoutUri = 'https://talkingpotato.shop';
+  console.log('🔍 [DEBUG] 1. 기본 logoutUri 설정:', logoutUri);
+  
+  // 추가 검증: /logout이 포함되어 있으면 즉시 제거
+  let cleanLogoutUri = logoutUri;
+  if (cleanLogoutUri.includes('/logout')) {
+    console.log('🚫 [WARNING] logout_uri에 /logout이 포함됨! 제거 중...');
+    cleanLogoutUri = cleanLogoutUri.replace(/\/logout.*$/, '');
+  }
+  
+  console.log('🔍 [DEBUG] 2. 정리된 cleanLogoutUri:', cleanLogoutUri);
+  console.log('🔍 [DEBUG] 3. COGNITO.signoutUri:', COGNITO.signoutUri);
+  
+  // URL 구성 전 최종 검증
+  const finalLogoutUri = cleanLogoutUri;
+  console.log('🔍 [DEBUG] 4. 최종 사용할 logout_uri:', finalLogoutUri);
+  
+  const url = `https://${COGNITO.domain}/logout` +
+    `?client_id=${COGNITO.clientId}` +
+    `&logout_uri=${encodeURIComponent(finalLogoutUri)}`;
+  
+  console.log('🔍 [DEBUG] 5. 생성된 전체 URL:', url);
+  console.log('🔍 [DEBUG] 6. URL에 /logout이 포함되어 있는지 확인:', url.includes('/logout'));
+  console.log('🔍 [DEBUG] 7. URL 파라미터 분석:');
+  
+  // URL 파라미터 상세 분석
+  try {
+    const urlObj = new URL(url);
+    const logoutUriParam = urlObj.searchParams.get('logout_uri');
+    console.log('🔍 [DEBUG] 8. URL 객체에서 추출한 logout_uri:', logoutUriParam);
+    console.log('🔍 [DEBUG] 9. logout_uri에 /logout 포함 여부:', logoutUriParam?.includes('/logout'));
+  } catch (e) {
+    console.error('🔍 [DEBUG] URL 파싱 오류:', e);
+  }
+  
+  // 최종 검증: URL에 /logout이 포함되어 있으면 오류 발생
+  if (url.includes('/logout')) {
+    console.error('🚫 [CRITICAL] 생성된 URL에 여전히 /logout이 포함됨!');
+    console.error('🚫 [CRITICAL] 문제가 된 URL:', url);
+    throw new Error('logout_uri에 /logout이 포함되어 있습니다!');
+  }
+  
+  console.log('🔍 [DEBUG] ===== buildLogoutUrl() 함수 완료 =====');
+  return url;
+};
+
 export const useUserStore = defineStore('user', {
   state: () => ({
     user: null,
@@ -14,31 +81,29 @@ export const useUserStore = defineStore('user', {
     idToken: null,
   }),
   actions: {
+    // ==== [수정] 불필요한 /logout 리디렉션 제거 ====
     async initializeStore() {
+      // 기존의 `/logout` 리디렉션 로직을 제거하여 불필요한 이동 방지
       // 로그아웃 후 자동 로그인 방지를 위한 추가 검증
       const isLogoutFlow = sessionStorage.getItem('logoutInProgress');
-      
-      // 로그아웃 플로우 중이면 자동 로그인 방지
+
       if (isLogoutFlow === 'true') {
         console.log('로그아웃 플로우 감지. 자동 로그인 방지.');
         sessionStorage.removeItem('logoutInProgress');
         this.clearAllData();
         return;
       }
-      
+
       this.accessToken = localStorage.getItem('accessToken');
       this.idToken = localStorage.getItem('idToken');
       this.refreshToken = localStorage.getItem('refreshToken');
 
-      // 토큰이 있더라도 유효성을 검증
       if (this.idToken && this.accessToken) {
         try {
-          // 토큰 유효성 검증을 위해 사용자 정보 요청
           await this.fetchMyInfo();
           if (this.isAuthenticated && this.user) {
             console.log('토큰이 유효합니다. 사용자:', this.user.userName);
           } else {
-            // 토큰이 유효하지 않으면 로그아웃 처리
             console.log('토큰이 유효하지 않습니다. 로그아웃 처리 중...');
             this.clearAllData();
           }
@@ -52,7 +117,7 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    clearAllData() {
+    clearAllData({ keepLogoutFlag = false } = {}) {
       this.user = null;
       this.isAuthenticated = false;
       this.favorites = [];
@@ -64,7 +129,10 @@ export const useUserStore = defineStore('user', {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('idToken');
       localStorage.removeItem('refreshToken');
-      sessionStorage.clear();
+
+      if (!keepLogoutFlag) {
+        sessionStorage.removeItem('logoutInProgress');
+      }
     },
 
     async fetchMyInfo() {
@@ -83,19 +151,7 @@ export const useUserStore = defineStore('user', {
       } catch (e) {
         if (e.response && e.response.status === 401) {
           console.log("Authentication error (401). Clearing data without logout message.");
-          // 401 오류 시에는 메시지 없이 데이터만 정리
-          this.user = null;
-          this.isAuthenticated = false;
-          this.favorites = [];
-          this.favoriteCount = 0;
-          this.accessToken = null;
-          this.refreshToken = null;
-          this.idToken = null;
-
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('idToken');
-          localStorage.removeItem('refreshToken');
-          sessionStorage.clear();
+          this.clearAllData();
         } else {
           this.error = 'Failed to fetch user information.';
           console.error(e);
@@ -107,8 +163,7 @@ export const useUserStore = defineStore('user', {
 
     async getLoginUrl() {
       try {
-        const response = await axios.get('/api/users/login/url');
-        return response.data.url;
+        return buildLoginUrl();
       } catch (e) {
         this.error = 'Failed to get login URL.';
         return null;
@@ -129,10 +184,11 @@ export const useUserStore = defineStore('user', {
         localStorage.setItem('idToken', this.idToken);
         localStorage.setItem('refreshToken', this.refreshToken);
 
+        sessionStorage.removeItem('logoutInProgress');
+
         await this.fetchMyInfo();
       } catch (e) {
         this.error = 'Error during login process.';
-        // 로그인 실패 시에는 메시지 없이 데이터만 정리
         this.user = null;
         this.isAuthenticated = false;
         this.favorites = [];
@@ -150,92 +206,107 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+    // ==== [수정] 로그아웃 로직 정리 및 단순화 ====
     async logout() {
       this.loading = true;
-      
-      // 로그아웃 플로우 시작 플래그 설정
       sessionStorage.setItem('logoutInProgress', 'true');
-      
+
       try {
-        // 1. 백엔드 로그아웃 API 호출
+        // 백엔드 로그아웃 API 호출 (accessToken이 있다면)
         if (this.accessToken) {
           await axios.post('/api/users/logout', null, {
-            headers: {
-              Authorization: `Bearer ${this.accessToken}`
-            }
+            headers: { Authorization: `Bearer ${this.accessToken}` }
           });
         }
-        
-        // 2. 모든 로컬 상태 초기화
-        this.user = null;
-        this.isAuthenticated = false;
-        this.favorites = [];
-        this.favoriteCount = 0;
-        this.accessToken = null;
-        this.refreshToken = null;
-        this.idToken = null;
 
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('idToken');
-        localStorage.removeItem('refreshToken');
-        sessionStorage.clear();
-        
-        // 3. 브라우저 캐시 완전 삭제
+        // 로컬 상태 및 저장소 초기화
+        this.clearAllData({ keepLogoutFlag: true });
+
+        // 브라우저 캐시 및 쿠키 삭제
         if ('caches' in window) {
           const cacheNames = await caches.keys();
           await Promise.all(cacheNames.map(name => caches.delete(name)));
         }
-        
-        // 4. 모든 쿠키 강제 삭제 (더 강력한 방법)
-        document.cookie.split(";").forEach(function(c) { 
-          document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+
+        document.cookie.split(';').forEach(c => {
+          document.cookie = c.replace(/^ +/, '').replace(/=.*/, `=;expires=${new Date(0).toUTCString()};path=/`);
         });
+
+        // AWS Cognito 세션 종료를 숨은 iframe으로 처리(화면 전환 없이)
+        console.log('🔍 [DEBUG] ===== logout() 함수에서 Cognito 로그아웃 시작 =====');
+        console.log('🔍 [DEBUG] 1. buildLogoutUrl() 호출 시작');
         
-        // 5. Cognito 관련 쿠키 특별 삭제
-        const cognitoCookies = [
-          'accessToken', 'idToken', 'refreshToken', 'CognitoIdentityServiceProvider',
-          'XSRF-TOKEN', 'AWSELB', 'AWSELBCORS', 'amplify-authenticator-authToken'
-        ];
+        const url = buildLogoutUrl();
         
-        cognitoCookies.forEach(cookieName => {
-          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=talkingpotato.shop;`;
-          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.talkingpotato.shop;`;
-        });
+        console.log('🔍 [DEBUG] 2. buildLogoutUrl()에서 받은 URL:', url);
+        console.log('🔍 [DEBUG] 3. URL에 /logout이 포함되어 있는지 확인:', url.includes('/logout'));
+        console.log('🔍 [DEBUG] 4. URL 길이:', url.length);
+        console.log('🔍 [DEBUG] 5. URL의 logout_uri 파라미터 위치:', url.indexOf('logout_uri='));
         
-        // 6. 로컬 스토리지 완전 삭제
-        localStorage.clear();
+        // URL 파라미터 상세 분석
+        try {
+          const urlObj = new URL(url);
+          const logoutUriParam = urlObj.searchParams.get('logout_uri');
+          console.log('🔍 [DEBUG] 6. URL 객체에서 추출한 logout_uri:', logoutUriParam);
+          console.log('🔍 [DEBUG] 7. logout_uri에 /logout 포함 여부:', logoutUriParam?.includes('/logout'));
+          console.log('🔍 [DEBUG] 8. logout_uri 길이:', logoutUriParam?.length);
+        } catch (e) {
+          console.error('🔍 [DEBUG] URL 파싱 오류:', e);
+        }
         
-        this.loading = false;
+        // iframe 생성 및 설정
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.referrerPolicy = 'no-referrer';
+        iframe.src = url;
         
-        // 7. AWS Cognito 세션 완전 종료를 위한 강제 로그아웃
-        const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=https://talkingpotato.shop/logout`;
+        console.log('🔍 [DEBUG] 9. iframe 생성 완료, src 설정:', iframe.src);
+        console.log('🔍 [DEBUG] 10. iframe src에 /logout 포함 여부:', iframe.src.includes('/logout'));
         
-                        // 8. AWS Cognito 로그아웃 페이지로 이동하여 세션 완전 종료
-                window.location.href = cognitoLogoutUrl;
+        document.body.appendChild(iframe);
+        console.log('🔍 [DEBUG] 11. iframe을 DOM에 추가 완료');
+        console.log('🔍 [DEBUG] ===== logout() 함수에서 Cognito 로그아웃 설정 완료 =====');
         
+        // iframe 제거 후 홈페이지로 리다이렉트
+        setTimeout(() => {
+          try { 
+            document.body.removeChild(iframe);
+            // 로그아웃 완료 후 홈페이지로 이동
+            if (window.location.pathname !== '/') {
+              window.history.replaceState(null, '', '/');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }
+          } catch(e){ 
+            void 0; 
+          } 
+        }, 3000);
+
       } catch (e) {
         console.error('로그아웃 중 오류:', e);
         this.error = '로그아웃 중 문제가 발생했지만 클라이언트 상태는 초기화되었습니다.';
-        
-        // 오류가 발생해도 로컬 상태는 초기화
-        this.user = null;
-        this.isAuthenticated = false;
-        this.favorites = [];
-        this.favoriteCount = 0;
-        this.accessToken = null;
-        this.refreshToken = null;
-        this.idToken = null;
-
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('idToken');
-        localStorage.removeItem('refreshToken');
-        sessionStorage.clear();
-        
+        this.clearAllData({ keepLogoutFlag: true });
         this.loading = false;
-        
-        // 오류 시에도 메인페이지로 이동
-        window.location.href = 'https://talkingpotato.shop';
+        // 오류 발생 시에도 Cognito 로그아웃 URL로 이동하여 세션 종료 시도
+        const url = buildLogoutUrl();
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.referrerPolicy = 'no-referrer';
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        setTimeout(() => { 
+          try { 
+            document.body.removeChild(iframe);
+            // 오류 발생 시에도 홈페이지로 이동
+            if (window.location.pathname !== '/') {
+              window.history.replaceState(null, '', '/');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }
+          } catch(e){ 
+            void 0; 
+          } 
+        }, 3000);
+      } finally {
+        this.loading = false;
       }
     },
 

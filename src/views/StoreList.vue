@@ -168,7 +168,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from '@/api/axios';
 import { useUserStore } from '@/stores/userStore';
@@ -214,6 +214,14 @@ const filteredStores = computed(() => {
 const fetchStores = async () => {
   try {
     const response = await axios.get('/api/stores');
+    
+    // API 응답이 HTML인지 확인
+    if (typeof response.data === 'string' && response.data.includes('<!doctype html>')) {
+      console.error('API가 HTML을 반환했습니다. 백엔드 서비스에 문제가 있을 수 있습니다.');
+      error.value = '서버에 문제가 있습니다. 잠시 후 다시 시도해주세요.';
+      return;
+    }
+    
     stores.value = response.data;
     console.log('가게 목록 조회 성공:', stores.value.length, '개');
     console.log('가게 데이터:', stores.value);
@@ -268,20 +276,32 @@ const initMap = () => {
     return;
   }
 
+  // 모바일 디바이스 감지
+  const isMobile = window.innerWidth <= 768;
+  console.log('모바일 디바이스:', isMobile);
+
   // 서울 중심 좌표
   const seoul = { lat: 37.5665, lng: 126.9780 };
   
-  map.value = new window.google.maps.Map(mapElement, {
+  const mapOptions = {
     center: seoul,
-    zoom: 12,
+    zoom: isMobile ? 11 : 12, // 모바일에서는 더 넓은 줌 레벨
     styles: [
       {
         featureType: 'poi',
         elementType: 'labels',
         stylers: [{ visibility: 'off' }]
       }
-    ]
-  });
+    ],
+    // 모바일 최적화 설정
+    gestureHandling: 'greedy', // 모바일에서 터치 제스처 개선
+    zoomControl: true,
+    zoomControlOptions: {
+      position: isMobile ? window.google.maps.ControlPosition.RIGHT_BOTTOM : window.google.maps.ControlPosition.RIGHT_TOP
+    }
+  };
+  
+  map.value = new window.google.maps.Map(mapElement, mapOptions);
 
   console.log('지도 생성 완료');
 
@@ -320,7 +340,7 @@ const initMap = () => {
         title: store.storeName,
         icon: {
           url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-          scaledSize: new window.google.maps.Size(32, 32)
+          scaledSize: new window.google.maps.Size(isMobile ? 24 : 32, isMobile ? 24 : 32)
         }
       });
 
@@ -367,6 +387,9 @@ const moveToStore = (store) => {
 const updateMapMarkers = () => {
   if (!map.value) return;
   
+  // 모바일 디바이스 감지
+  const isMobile = window.innerWidth <= 768;
+  
   // 기존 마커들 제거
   markers.value.forEach(marker => marker.setMap(null));
   markers.value = [];
@@ -385,7 +408,7 @@ const updateMapMarkers = () => {
         title: store.storeName,
         icon: {
           url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-          scaledSize: new window.google.maps.Size(32, 32)
+          scaledSize: new window.google.maps.Size(isMobile ? 24 : 32, isMobile ? 24 : 32)
         }
       });
 
@@ -449,10 +472,45 @@ const checkBookingStatus = async (storeId) => {
       (booking.bookingStateCode === 1 || booking.bookingStateCode === 2) // CONFIRMED 또는 COMPLETED
     );
     
+    // 리뷰 작성 여부도 확인
+    if (hasBooking.value) {
+      await checkReviewStatus(storeId);
+    }
+    
     console.log('예약 상태 확인:', hasBooking.value);
   } catch (e) {
     console.error("예약 상태 확인 실패:", e);
     hasBooking.value = false;
+  }
+};
+
+// 리뷰 작성 여부 확인 함수
+const checkReviewStatus = async (storeId) => {
+  try {
+    const idToken = localStorage.getItem('idToken');
+    
+    // 리뷰 작성 여부 확인
+    const reviewResponse = await axios.get(`/api/reviews/store/${storeId}`, {
+      headers: { Authorization: `Bearer ${idToken}` }
+    });
+    
+    const userReviews = reviewResponse.data;
+    const userReviewCount = userReviews.filter(review => 
+      review.userId === userStore.user?.userId
+    ).length;
+    
+    // 이미 리뷰를 작성했다면 버튼 비활성화
+    if (userReviewCount > 0) {
+      hasBooking.value = false;
+      console.log('이미 리뷰를 작성했습니다:', userReviewCount, '개 리뷰');
+    } else {
+      hasBooking.value = true;
+      console.log('리뷰 작성 가능');
+    }
+    
+  } catch (e) {
+    console.error("리뷰 상태 확인 실패:", e);
+    // 에러가 발생해도 예약 상태는 유지
   }
 };
 
@@ -502,6 +560,24 @@ const watchViewMode = async () => {
 
 onMounted(() => {
   fetchStores();
+  
+  // 모바일에서 화면 크기 변경 시 지도 조정
+  const handleResize = () => {
+    if (viewMode.value === 'map' && map.value) {
+      // 지도 리사이즈 트리거
+      window.google.maps.event.trigger(map.value, 'resize');
+      // 지도 다시 중앙 정렬
+      const seoul = { lat: 37.5665, lng: 126.9780 };
+      map.value.setCenter(seoul);
+    }
+  };
+  
+  window.addEventListener('resize', handleResize);
+  
+  // 컴포넌트 언마운트 시 이벤트 리스너 제거
+  onUnmounted(() => {
+    window.removeEventListener('resize', handleResize);
+  });
 });
 
 // viewMode 변경 감지
@@ -949,21 +1025,142 @@ watch(selectedCategory, () => {
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .title {
+    font-size: 24px;
+    margin-bottom: 15px;
+  }
+  
+  .category-filter {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+  
+  .category-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 20px;
+  }
+  
+  .view-toggle {
+    margin-bottom: 15px;
+  }
+  
+  .toggle-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+    border-radius: 20px;
+  }
+  
+  /* 지도 보기 모바일 최적화 */
   .map-view {
     flex-direction: column;
     height: auto;
+    gap: 10px;
   }
   
   .map-container {
-    height: 400px;
+    height: 350px;
+    min-height: 300px;
+    width: 100%;
   }
   
   .map-sidebar {
     width: 100%;
+    max-height: 300px;
+    padding: 15px;
+  }
+  
+  .map-store-list {
+    gap: 10px;
+  }
+  
+  .map-store-item {
+    padding: 12px;
+  }
+  
+  .map-store-item h4 {
+    font-size: 13px;
+  }
+  
+  .map-store-item p {
+    font-size: 11px;
+  }
+  
+  /* 목록 보기 모바일 최적화 */
+  .stores-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .store-card {
+    padding: 15px;
+  }
+  
+  .store-name {
+    font-size: 16px;
+  }
+  
+  .store-location {
+    font-size: 13px;
+  }
+  
+  .info-item {
+    font-size: 11px;
+  }
+}
+
+/* 태블릿 반응형 디자인 */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .map-view {
+    height: 500px;
+    gap: 15px;
+  }
+  
+  .map-sidebar {
+    width: 250px;
+    padding: 15px;
   }
   
   .stores-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+/* 작은 모바일 화면 */
+@media (max-width: 480px) {
+  .container {
+    padding: 8px;
+  }
+  
+  .title {
+    font-size: 20px;
+  }
+  
+  .category-filter {
+    gap: 6px;
+  }
+  
+  .category-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  
+  .map-container {
+    height: 300px;
+  }
+  
+  .map-sidebar {
+    max-height: 250px;
+    padding: 12px;
+  }
+  
+  .store-card {
+    padding: 12px;
   }
 }
 </style>

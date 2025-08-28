@@ -90,20 +90,32 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
-  // router.beforeEach는 'app.use(pinia)'가 실행되기 전에 호출될 수 있으므로,
-  // 여기서 'useUserStore()'를 직접 호출하면 오류가 발생합니다.
-  // 이 문제를 해결하기 위해 'router.isReady()'를 사용합니다.
-  if (router.isReady()) {
-    const userStore = useUserStore();
-    if (to.meta.requiresAuth && !userStore.isAuthenticated) {
-      next({ name: 'Login' });
-    } else {
-      next();
-    }
-  } else {
-    next();
+router.beforeEach(async (to, from, next) => {
+  // 1) /logout 접근은 언제나 홈으로 우회 (강화된 차단)
+  if (to.path.replace(/\/+$/, '') === '/logout') {
+    console.log('🚫 [ROUTER] /logout 경로 접근 차단! 홈으로 우회');
+    console.log('🚫 [ROUTER] from:', from.path, 'to:', to.path);
+    return next({ path: '/', replace: true });
   }
-});
 
+  // 2) URL에 /logout이 포함된 모든 경로 차단
+  if (to.fullPath.includes('/logout')) {
+    console.log('🚫 [ROUTER] URL에 /logout 포함 감지! 홈으로 우회');
+    console.log('🚫 [ROUTER] 문제가 된 URL:', to.fullPath);
+    return next({ path: '/', replace: true });
+  }
+
+  // 3) 스토어 초기화(토큰만 있고 아직 미인증인 경우)
+  const userStore = useUserStore();
+  if (!userStore.isAuthenticated && localStorage.getItem('idToken')) {
+    try { await userStore.initializeStore(); } catch { /* noop */ }
+  }
+
+  // 4) 인증 필요한 라우트면 홈으로
+  if (to.meta.requiresAuth && !userStore.isAuthenticated) {
+    return next({ name: 'HomePage' });
+  }
+
+  next();
+});
 export default router;
