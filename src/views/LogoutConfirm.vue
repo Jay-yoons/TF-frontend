@@ -30,31 +30,11 @@ export default {
       void 0
     }
 
-    // 2) 숨은 iframe으로 Cognito 로그아웃 호출 (화면 노출 X)
-    const domain   = process.env.VUE_APP_COGNITO_DOMAIN
-    const clientId = process.env.VUE_APP_COGNITO_CLIENT_ID
-    const redirect = process.env.VUE_APP_LOGOUT_REDIRECT || (window.location.origin + '/')
-
-    if (domain && clientId) {
-      const iframe = document.createElement('iframe')
-      iframe.style.display = 'none'
-      iframe.referrerPolicy = 'no-referrer'
-      iframe.src = `${domain}/logout?client_id=${encodeURIComponent(clientId)}&logout_uri=${encodeURIComponent(redirect)}`
-      document.body.appendChild(iframe)
-
-      setTimeout(() => {
-        try {
-          document.body.removeChild(iframe)
-          // 로그아웃 완료 후 홈페이지로 이동
-          if (window.location.pathname !== '/') {
-            window.history.replaceState(null, '', '/')
-            window.dispatchEvent(new PopStateEvent('popstate'))
-          }
-        } catch (e) {
-          // ESLint no-empty 대응
-          void 0
-        }
-      }, 3000)
+    // 2) userStore의 설정을 사용하여 Cognito 로그아웃 호출
+    const userStore = useUserStore()
+    if (userStore) {
+      // userStore의 logout 함수를 사용하여 일관성 유지
+      userStore.logout()
     }
   },
   methods: {
