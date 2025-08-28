@@ -1,5 +1,4 @@
 <template>
-  <!-- 배경은 그대로 두고, 모달만 띄움 -->
   <div class="backdrop"></div>
   <div class="modal">
     <div class="modal-header">
@@ -19,26 +18,22 @@ import { useUserStore } from '@/stores/userStore'
 export default {
   name: 'LogoutConfirm',
   mounted() {
-    // 1) 로컬 인증상태/토큰 정리 (프로젝트에 맞게 조정)
+    // 1) 로컬 인증 상태/토큰 정리
     try {
       const user = useUserStore()
-      user?.clear?.()              // Pinia 액션이 있으면 호출
+      user?.clear?.()
       localStorage.removeItem('access_token')
       localStorage.removeItem('id_token')
       sessionStorage.clear()
-    } catch {}
+    } catch (e) {
+      // ESLint no-empty 대응: 최소 구문
+      void 0
+    }
 
-    // 2) Cognito Hosted UI 로그아웃을 '숨은 iframe'으로 호출 (화면에 안 보임)
-    const domain =
-      (import.meta && import.meta.env && import.meta.env.VITE_COGNITO_DOMAIN) ||
-      process.env.VUE_APP_COGNITO_DOMAIN
-    const clientId =
-      (import.meta && import.meta.env && import.meta.env.VITE_COGNITO_CLIENT_ID) ||
-      process.env.VUE_APP_COGNITO_CLIENT_ID
-    const redirect =
-      (import.meta && import.meta.env && import.meta.env.VITE_LOGOUT_REDIRECT) ||
-      process.env.VUE_APP_LOGOUT_REDIRECT ||
-      (window.location.origin + '/')
+    // 2) 숨은 iframe으로 Cognito 로그아웃 호출 (화면 노출 X)
+    const domain   = process.env.VUE_APP_COGNITO_DOMAIN
+    const clientId = process.env.VUE_APP_COGNITO_CLIENT_ID
+    const redirect = process.env.VUE_APP_LOGOUT_REDIRECT || (window.location.origin + '/')
 
     if (domain && clientId) {
       const iframe = document.createElement('iframe')
@@ -46,8 +41,15 @@ export default {
       iframe.referrerPolicy = 'no-referrer'
       iframe.src = `${domain}/logout?client_id=${encodeURIComponent(clientId)}&logout_uri=${encodeURIComponent(redirect)}`
       document.body.appendChild(iframe)
-      // 너무 오래 남아있지 않게 정리
-      setTimeout(() => { try { document.body.removeChild(iframe) } catch {} }, 3000)
+
+      setTimeout(() => {
+        try {
+          document.body.removeChild(iframe)
+        } catch (e) {
+          // ESLint no-empty 대응
+          void 0
+        }
+      }, 3000)
     }
   },
   methods: {
