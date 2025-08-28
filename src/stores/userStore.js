@@ -19,8 +19,11 @@ const buildLoginUrl = () =>
 
 // 로그아웃 URL 빌더
 const buildLogoutUrl = () => {
+  console.log('🔍 [DEBUG] ===== buildLogoutUrl() 함수 시작 =====');
+  
   // logout_uri를 절대적으로 홈페이지로 설정 (절대 /logout이 붙지 않도록)
   const logoutUri = 'https://talkingpotato.shop';
+  console.log('🔍 [DEBUG] 1. 기본 logoutUri 설정:', logoutUri);
   
   // 추가 검증: /logout이 포함되어 있으면 즉시 제거
   let cleanLogoutUri = logoutUri;
@@ -29,23 +32,39 @@ const buildLogoutUrl = () => {
     cleanLogoutUri = cleanLogoutUri.replace(/\/logout.*$/, '');
   }
   
+  console.log('🔍 [DEBUG] 2. 정리된 cleanLogoutUri:', cleanLogoutUri);
+  console.log('🔍 [DEBUG] 3. COGNITO.signoutUri:', COGNITO.signoutUri);
+  
+  // URL 구성 전 최종 검증
+  const finalLogoutUri = cleanLogoutUri;
+  console.log('🔍 [DEBUG] 4. 최종 사용할 logout_uri:', finalLogoutUri);
+  
   const url = `https://${COGNITO.domain}/logout` +
     `?client_id=${COGNITO.clientId}` +
-    `&logout_uri=${encodeURIComponent(cleanLogoutUri)}`;
+    `&logout_uri=${encodeURIComponent(finalLogoutUri)}`;
   
-  console.log('🔍 [DEBUG] buildLogoutUrl() 호출됨');
-  console.log('🔍 [DEBUG] COGNITO.signoutUri:', COGNITO.signoutUri);
-  console.log('🔍 [DEBUG] 원본 logout_uri:', logoutUri);
-  console.log('🔍 [DEBUG] 정리된 logout_uri:', cleanLogoutUri);
-  console.log('🔍 [DEBUG] 생성된 전체 URL:', url);
-  console.log('🔍 [DEBUG] URL에 /logout이 포함되어 있는지 확인:', url.includes('/logout'));
+  console.log('🔍 [DEBUG] 5. 생성된 전체 URL:', url);
+  console.log('🔍 [DEBUG] 6. URL에 /logout이 포함되어 있는지 확인:', url.includes('/logout'));
+  console.log('🔍 [DEBUG] 7. URL 파라미터 분석:');
+  
+  // URL 파라미터 상세 분석
+  try {
+    const urlObj = new URL(url);
+    const logoutUriParam = urlObj.searchParams.get('logout_uri');
+    console.log('🔍 [DEBUG] 8. URL 객체에서 추출한 logout_uri:', logoutUriParam);
+    console.log('🔍 [DEBUG] 9. logout_uri에 /logout 포함 여부:', logoutUriParam?.includes('/logout'));
+  } catch (e) {
+    console.error('🔍 [DEBUG] URL 파싱 오류:', e);
+  }
   
   // 최종 검증: URL에 /logout이 포함되어 있으면 오류 발생
   if (url.includes('/logout')) {
     console.error('🚫 [CRITICAL] 생성된 URL에 여전히 /logout이 포함됨!');
+    console.error('🚫 [CRITICAL] 문제가 된 URL:', url);
     throw new Error('logout_uri에 /logout이 포함되어 있습니다!');
   }
   
+  console.log('🔍 [DEBUG] ===== buildLogoutUrl() 함수 완료 =====');
   return url;
 };
 
@@ -214,16 +233,39 @@ export const useUserStore = defineStore('user', {
         });
 
         // AWS Cognito 세션 종료를 숨은 iframe으로 처리(화면 전환 없이)
-        console.log('🔍 [DEBUG] logout() 함수에서 buildLogoutUrl() 호출 시작');
-        const url = buildLogoutUrl();
-        console.log('🔍 [DEBUG] logout() 함수에서 받은 URL:', url);
-        console.log('🔍 [DEBUG] URL에 /logout이 포함되어 있는지 확인:', url.includes('/logout'));
+        console.log('🔍 [DEBUG] ===== logout() 함수에서 Cognito 로그아웃 시작 =====');
+        console.log('🔍 [DEBUG] 1. buildLogoutUrl() 호출 시작');
         
+        const url = buildLogoutUrl();
+        
+        console.log('🔍 [DEBUG] 2. buildLogoutUrl()에서 받은 URL:', url);
+        console.log('🔍 [DEBUG] 3. URL에 /logout이 포함되어 있는지 확인:', url.includes('/logout'));
+        console.log('🔍 [DEBUG] 4. URL 길이:', url.length);
+        console.log('🔍 [DEBUG] 5. URL의 logout_uri 파라미터 위치:', url.indexOf('logout_uri='));
+        
+        // URL 파라미터 상세 분석
+        try {
+          const urlObj = new URL(url);
+          const logoutUriParam = urlObj.searchParams.get('logout_uri');
+          console.log('🔍 [DEBUG] 6. URL 객체에서 추출한 logout_uri:', logoutUriParam);
+          console.log('🔍 [DEBUG] 7. logout_uri에 /logout 포함 여부:', logoutUriParam?.includes('/logout'));
+          console.log('🔍 [DEBUG] 8. logout_uri 길이:', logoutUriParam?.length);
+        } catch (e) {
+          console.error('🔍 [DEBUG] URL 파싱 오류:', e);
+        }
+        
+        // iframe 생성 및 설정
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         iframe.referrerPolicy = 'no-referrer';
         iframe.src = url;
+        
+        console.log('🔍 [DEBUG] 9. iframe 생성 완료, src 설정:', iframe.src);
+        console.log('🔍 [DEBUG] 10. iframe src에 /logout 포함 여부:', iframe.src.includes('/logout'));
+        
         document.body.appendChild(iframe);
+        console.log('🔍 [DEBUG] 11. iframe을 DOM에 추가 완료');
+        console.log('🔍 [DEBUG] ===== logout() 함수에서 Cognito 로그아웃 설정 완료 =====');
         
         // iframe 제거 후 홈페이지로 리다이렉트
         setTimeout(() => {
