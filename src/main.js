@@ -82,6 +82,24 @@ import { useUserStore } from '@/stores/userStore';
   } catch (e) { void 0; }
 })();
 
+(function blockCognitoLoginRedirects() {
+  const re = /https:\/\/[^/]*\.auth\.[^/]*\.amazoncognito\.com\/login\?.*logout_uri=/i;
+  document.addEventListener('click', (e) => {
+    const a = e.target?.closest?.('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href') || '';
+    if (re.test(href)) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  try {
+    const _assign = window.location.assign.bind(window.location);
+    window.location.assign = (url) => (typeof url === 'string' && re.test(url)) ? void 0 : _assign(url);
+  } catch (e) { void 0; }
+  try {
+    const _replace = window.location.replace.bind(window.location);
+    window.location.replace = (url) => (typeof url === 'string' && re.test(url)) ? void 0 : _replace(url);
+  } catch (e) { void 0; }
+})();
+
 // ============================
 // 앱/스토어/라우터 초기화
 // ============================
