@@ -114,6 +114,12 @@ import { useUserStore } from '@/stores/userStore';
       console.log('🚫 MutationObserver에서 /logout 감지! 홈으로 리다이렉트');
       history.replaceState(null, '', '/');
     }
+    
+    // LogoutConfirm.vue 관련 문제도 차단
+    if (window.location.pathname.includes('logout') || window.location.href.includes('logout')) {
+      console.log('🚫 MutationObserver에서 logout 관련 경로 감지! 홈으로 리다이렉트');
+      history.replaceState(null, '', '/');
+    }
   });
   
   observer.observe(document.body, {
@@ -121,7 +127,18 @@ import { useUserStore } from '@/stores/userStore';
     subtree: true
   });
 
+  // 추가: 모든 logout 관련 URL 변경 감지
+  const originalFetch = window.fetch;
+  window.fetch = function(url, options) {
+    if (typeof url === 'string' && url.includes('/logout')) {
+      console.log('🚫 fetch에서 /logout URL 차단:', url);
+      return Promise.reject(new Error('logout URL is blocked'));
+    }
+    return originalFetch.call(this, url, options);
+  };
+
   console.log('🚫 /logout 경로 차단기 활성화 완료');
+  console.log('🚫 LogoutConfirm.vue 직접 접근 차단 완료');
 })();
 
 (function blockCognitoLoginRedirects() {
