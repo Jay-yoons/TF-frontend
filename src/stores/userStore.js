@@ -6,7 +6,7 @@ const COGNITO = Object.freeze({
   domain: 'ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com',
   clientId: 'k2q60p4rkctc3mpon0dui3v8h',
   redirectUri: 'https://talkingpotato.shop/callback', // 로그인 완료 후 돌아올 곳
-  signoutUri: 'https://talkingpotato.shop/'           // 로그아웃 완료 후 돌아올 곳
+  signoutUri: 'https://talkingpotato.shop'           // 로그아웃 완료 후 돌아올 곳 (끝에 / 제거)
 });
 
 // 로그인 URL 빌더
@@ -18,10 +18,20 @@ const buildLoginUrl = () =>
   `&scope=openid+email+profile`;
 
 // 로그아웃 URL 빌더
-const buildLogoutUrl = () =>
-  `https://${COGNITO.domain}/logout` +
-  `?client_id=${COGNITO.clientId}` +
-  `&logout_uri=${encodeURIComponent(COGNITO.signoutUri)}`; // 홈페이지로 리다이렉트
+const buildLogoutUrl = () => {
+  // logout_uri를 절대적으로 홈페이지로 설정 (절대 /logout이 붙지 않도록)
+  const logoutUri = 'https://talkingpotato.shop';
+  const url = `https://${COGNITO.domain}/logout` +
+    `?client_id=${COGNITO.clientId}` +
+    `&logout_uri=${encodeURIComponent(logoutUri)}`;
+  
+  console.log('🔍 [DEBUG] buildLogoutUrl() 호출됨');
+  console.log('🔍 [DEBUG] COGNITO.signoutUri:', COGNITO.signoutUri);
+  console.log('🔍 [DEBUG] 최종 logout_uri:', logoutUri);
+  console.log('🔍 [DEBUG] 생성된 전체 URL:', url);
+  
+  return url;
+};
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -188,7 +198,11 @@ export const useUserStore = defineStore('user', {
         });
 
         // AWS Cognito 세션 종료를 숨은 iframe으로 처리(화면 전환 없이)
+        console.log('🔍 [DEBUG] logout() 함수에서 buildLogoutUrl() 호출 시작');
         const url = buildLogoutUrl();
+        console.log('🔍 [DEBUG] logout() 함수에서 받은 URL:', url);
+        console.log('🔍 [DEBUG] URL에 /logout이 포함되어 있는지 확인:', url.includes('/logout'));
+        
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         iframe.referrerPolicy = 'no-referrer';

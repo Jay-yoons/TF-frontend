@@ -116,7 +116,16 @@ export default {
     };
 
     const logout = async () => {
-      await userStore.logout();
+      console.log('🚪 [DEBUG] App.vue logout() 함수 시작');
+      console.log('🚪 [DEBUG] 현재 userStore 상태:', userStore.isAuthenticated);
+      
+      try {
+        await userStore.logout();
+        console.log('✅ [DEBUG] userStore.logout() 완료');
+      } catch (error) {
+        console.error('❌ [DEBUG] userStore.logout() 오류:', error);
+      }
+      
       showMessageModal(
         '로그아웃 완료',
         '안전하게 로그아웃되었습니다.',
