@@ -66,7 +66,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (requiresAuth && !isAuthenticated) {
-    return next({ path: '/' });
+    return next({ name: 'Login' });
   }
   next();
 });
