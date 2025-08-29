@@ -43,7 +43,6 @@
 <script>
 import { ref } from 'vue';
 import { useUserStore } from '@/stores/userStore';
-import { useRouter } from 'vue-router';
 import axios from '@/api/axios';
 import MessageModal from '@/components/MessageModal.vue';
 
@@ -54,7 +53,6 @@ export default {
   },
   setup() {
     const userStore = useUserStore();
-    const router = useRouter();
     
     // 모달 상태 관리
     const showModal = ref(false);
@@ -117,12 +115,8 @@ export default {
 
     const logout = () => {
       userStore.logout();
-      showMessageModal(
-        '로그아웃 완료',
-        '안전하게 로그아웃되었습니다.',
-        '확인'
-      );
-      router.push('/');
+      // userStore.logout()에서 이미 홈페이지로 리다이렉트되므로 
+      // 여기서는 추가 작업이 필요하지 않습니다
     };
 
     return {
