@@ -271,9 +271,13 @@ const initMap = () => {
   // 강남 중심 좌표
   const gangnam = { lat: 37.496667, lng: 127.0275 };
   
+  // 모바일에서 줌 레벨 조정
+  const isMobile = window.innerWidth <= 768;
+  const initialZoom = isMobile ? 13 : 12;
+  
   map.value = new window.google.maps.Map(mapElement, {
     center: gangnam,
-    zoom: 12,
+    zoom: initialZoom,
     styles: [
       {
         featureType: 'poi',
@@ -314,24 +318,33 @@ const initMap = () => {
 
       console.log(`마커 위치 ${index + 1}:`, position);
 
+      // 모바일에서 마커 크기 조정
+      const isMobile = window.innerWidth <= 768;
+      const markerSize = isMobile ? 24 : 32;
+      
       const marker = new window.google.maps.Marker({
         position: position,
         map: map.value,
         title: store.storeName,
         icon: {
           url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-          scaledSize: new window.google.maps.Size(32, 32)
+          scaledSize: new window.google.maps.Size(markerSize, markerSize)
         }
       });
 
+      // 모바일에서 정보창 크기 조정
+      const infoWindowMaxWidth = isMobile ? '150px' : '200px';
+      const titleFontSize = isMobile ? '12px' : '14px';
+      const textFontSize = isMobile ? '10px' : '12px';
+      
       // 정보창 추가
       const infoWindow = new window.google.maps.InfoWindow({
         content: `
-          <div style="padding: 10px; max-width: 200px;">
-            <h3 style="margin: 0 0 5px 0; font-size: 14px;">${store.storeName}</h3>
-            <p style="margin: 0 0 5px 0; font-size: 12px; color: #666;">${store.storeLocation}</p>
-            <p style="margin: 0 0 5px 0; font-size: 12px; color: #888;">${formatBusinessHours(store.openTime, store.closeTime)}</p>
-            <p style="margin: 0; font-size: 12px; color: ${store.openNow ? '#4caf50' : '#f44336'};">
+          <div style="padding: 8px; max-width: ${infoWindowMaxWidth};">
+            <h3 style="margin: 0 0 4px 0; font-size: ${titleFontSize}; font-weight: bold;">${store.storeName}</h3>
+            <p style="margin: 0 0 4px 0; font-size: ${textFontSize}; color: #666;">${store.storeLocation}</p>
+            <p style="margin: 0 0 4px 0; font-size: ${textFontSize}; color: #888;">${formatBusinessHours(store.openTime, store.closeTime)}</p>
+            <p style="margin: 0; font-size: ${textFontSize}; color: ${store.openNow ? '#4caf50' : '#f44336'}; font-weight: bold;">
               ${store.openStatus}
             </p>
           </div>
@@ -359,7 +372,11 @@ const moveToStore = (store) => {
       lng: parseFloat(store.longitude)
     };
     map.value.setCenter(position);
-    map.value.setZoom(15);
+    
+    // 모바일에서 줌 레벨 조정
+    const isMobile = window.innerWidth <= 768;
+    const zoomLevel = isMobile ? 16 : 15;
+    map.value.setZoom(zoomLevel);
   }
 };
 
@@ -379,24 +396,33 @@ const updateMapMarkers = () => {
         lng: parseFloat(store.longitude)
       };
       
+      // 모바일에서 마커 크기 조정
+      const isMobile = window.innerWidth <= 768;
+      const markerSize = isMobile ? 24 : 32;
+      
       const marker = new window.google.maps.Marker({
         position: position,
         map: map.value,
         title: store.storeName,
         icon: {
           url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-          scaledSize: new window.google.maps.Size(32, 32)
+          scaledSize: new window.google.maps.Size(markerSize, markerSize)
         }
       });
 
+      // 모바일에서 정보창 크기 조정
+      const infoWindowMaxWidth = isMobile ? '150px' : '200px';
+      const titleFontSize = isMobile ? '12px' : '14px';
+      const textFontSize = isMobile ? '10px' : '12px';
+      
       // 정보창 추가
       const infoWindow = new window.google.maps.InfoWindow({
         content: `
-          <div style="padding: 10px; max-width: 200px;">
-            <h3 style="margin: 0 0 5px 0; font-size: 14px;">${store.storeName}</h3>
-            <p style="margin: 0 0 5px 0; font-size: 12px; color: #666;">${store.storeLocation}</p>
-            <p style="margin: 0 0 5px 0; font-size: 12px; color: #888;">${formatBusinessHours(store.openTime, store.closeTime)}</p>
-            <p style="margin: 0; font-size: 12px; color: ${store.openNow ? '#4caf50' : '#f44336'};">
+          <div style="padding: 8px; max-width: ${infoWindowMaxWidth};">
+            <h3 style="margin: 0 0 4px 0; font-size: ${titleFontSize}; font-weight: bold;">${store.storeName}</h3>
+            <p style="margin: 0 0 4px 0; font-size: ${textFontSize}; color: #666;">${store.storeLocation}</p>
+            <p style="margin: 0 0 4px 0; font-size: ${textFontSize}; color: #888;">${formatBusinessHours(store.openTime, store.closeTime)}</p>
+            <p style="margin: 0; font-size: ${textFontSize}; color: ${store.openNow ? '#4caf50' : '#f44336'}; font-weight: bold;">
               ${store.openStatus}
             </p>
           </div>
@@ -952,18 +978,85 @@ watch(selectedCategory, () => {
   .map-view {
     flex-direction: column;
     height: auto;
+    gap: 10px;
   }
   
   .map-container {
-    height: 400px;
+    height: 300px;
+    min-height: 250px;
+    border-radius: 8px;
   }
   
   .map-sidebar {
     width: 100%;
+    padding: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  .map-sidebar h3 {
+    font-size: 16px;
+    margin-bottom: 15px;
+  }
+  
+  .map-store-item {
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+  
+  .map-store-item h4 {
+    font-size: 13px;
+  }
+  
+  .map-store-item p {
+    font-size: 11px;
   }
   
   .stores-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .toggle-buttons {
+    margin-bottom: 15px;
+  }
+  
+  .toggle-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+}
+
+/* 작은 모바일 화면 */
+@media (max-width: 480px) {
+  .map-container {
+    height: 250px;
+    min-height: 200px;
+  }
+  
+  .map-sidebar {
+    padding: 12px;
+    max-height: 350px;
+  }
+  
+  .map-store-item {
+    padding: 10px;
+  }
+  
+  .map-store-item h4 {
+    font-size: 12px;
+  }
+  
+  .map-store-item p {
+    font-size: 10px;
+  }
+  
+  .store-category {
+    font-size: 9px;
+    padding: 1px 6px;
+  }
+  
+  .detail-link {
+    font-size: 11px;
   }
 }
 </style>
