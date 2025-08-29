@@ -1,5 +1,10 @@
 <template>
   <div class="container">
+    <!-- 뒤로가기 버튼 -->
+    <button @click="goBack" class="back-button">
+      ← 뒤로가기
+    </button>
+
     <div v-if="loading" class="status-message">
       가게 정보를 불러오는 중...
     </div>
@@ -90,12 +95,17 @@
     <div v-else class="status-message">
       가게 정보를 찾을 수 없습니다.
     </div>
+
+    <!-- 토스트 알림 -->
+    <div v-if="toast.show" :class="['toast', toast.type]" @click="hideToast">
+      {{ toast.message }}
+    </div>
   </div>
 </template>
 
 <script>
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import axios from '@/api/axios';
 import { useUserStore } from '@/stores/userStore';
 
@@ -103,12 +113,14 @@ export default {
   name: 'StoreDetail',
   setup() {
     const route = useRoute();
+    const router = useRouter();
     const userStore = useUserStore();
     const store = ref(null);
     const loading = ref(true);
     const error = ref(null);
     const isFavorite = ref(false);
     const hasBooking = ref(false);
+    const toast = ref({ show: false, message: '', type: 'success' });
 
     const fetchStoreDetail = async () => {
       try {
@@ -187,7 +199,7 @@ export default {
 
     const toggleFavorite = async () => {
         if (!userStore.isAuthenticated) {
-            alert("즐겨찾기 기능을 이용하려면 로그인이 필요합니다.");
+            showToast("즐겨찾기 기능을 이용하려면 로그인이 필요합니다.", "error");
             return;
         }
         try {
@@ -199,19 +211,41 @@ export default {
                   params: { storeId: storeId },
                   headers: { Authorization: `Bearer ${idToken}` }
                 });
-                alert('즐겨찾기에서 삭제되었습니다.');
+                showToast('즐겨찾기에서 삭제되었습니다.', 'success');
             } else {
                 await axios.post(`/api/favorites`, null, {
                   params: { storeId: storeId },
                   headers: { Authorization: `Bearer ${idToken}` }
                 });
-                alert('즐겨찾기에 추가되었습니다.');
+                showToast('즐겨찾기에 추가되었습니다.', 'success');
             }
             isFavorite.value = !isFavorite.value;
         } catch (e) {
             console.error("즐겨찾기 토글 실패:", e);
-            alert('즐겨찾기 처리 중 오류가 발생했습니다.');
+            showToast('즐겨찾기 처리 중 오류가 발생했습니다.', 'error');
         }
+    };
+
+    // 뒤로가기 함수
+    const goBack = () => {
+      if (window.history.length > 1) {
+        router.go(-1);
+      } else {
+        router.push('/stores');
+      }
+    };
+
+    // 토스트 알림 표시
+    const showToast = (message, type = 'success') => {
+      toast.value = { show: true, message, type };
+      setTimeout(() => {
+        hideToast();
+      }, 3000);
+    };
+
+    // 토스트 알림 숨기기
+    const hideToast = () => {
+      toast.value.show = false;
     };
 
     onMounted(async () => {
@@ -281,7 +315,11 @@ export default {
       userStore,
       formatBusinessHours,
       isStoreOpen,
-      handleImageError
+      handleImageError,
+      goBack,
+      toast,
+      showToast,
+      hideToast
     };
   },
 };
@@ -293,6 +331,67 @@ export default {
   margin: 0 auto;
   padding: 20px;
   font-family: 'Noto Sans KR', sans-serif;
+  position: relative;
+}
+
+/* 뒤로가기 버튼 */
+.back-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #666;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.back-button:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+/* 토스트 알림 */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+  max-width: 300px;
+  word-wrap: break-word;
+}
+
+.toast.success {
+  background: #4caf50;
+}
+
+.toast.error {
+  background: #f44336;
+}
+
+.toast.info {
+  background: #2196f3;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .status-message {
@@ -423,5 +522,38 @@ export default {
 .status-badge.closed {
   background-color: #f44336;
   color: white;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .back-button {
+    top: 10px;
+    left: 10px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .action-buttons-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .action-button {
+    padding: 12px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 15px;
+  }
+  
+  .store-card {
+    padding: 20px;
+  }
+  
+  .store-image {
+    width: 100%;
+  }
 }
 </style>

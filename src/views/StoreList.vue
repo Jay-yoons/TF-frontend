@@ -1,5 +1,10 @@
 <template>
   <div class="container">
+    <!-- 뒤로가기 버튼 -->
+    <button @click="goBack" class="back-button">
+      ← 뒤로가기
+    </button>
+
     <div v-if="loading" class="status-message">
       가게 목록을 불러오는 중...
     </div>
@@ -8,6 +13,40 @@
     </div>
     <div v-else>
       <h1 class="title">가게 목록</h1>
+      
+      <!-- 검색바 -->
+      <div class="search-section">
+        <div class="search-container">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="가게명 또는 위치로 검색..."
+            class="search-input"
+            @input="handleSearch"
+          />
+          <button @click="clearSearch" class="clear-search-btn" v-if="searchQuery">
+            ×
+          </button>
+        </div>
+        <div class="search-filters">
+          <label class="filter-label">
+            <input
+              v-model="filters.openOnly"
+              type="checkbox"
+              @change="applyFilters"
+            />
+            영업중인 가게만
+          </label>
+          <label class="filter-label">
+            <input
+              v-model="filters.hasSeats"
+              type="checkbox"
+              @change="applyFilters"
+            />
+            예약 가능한 가게만
+          </label>
+        </div>
+      </div>
       
       <div class="category-filter">
         <button 
@@ -199,6 +238,11 @@
         </div>
       </div>
     </div>
+
+    <!-- 토스트 알림 -->
+    <div v-if="toast.show" :class="['toast', toast.type]" @click="hideToast">
+      {{ toast.message }}
+    </div>
   </div>
 </template>
 
@@ -223,13 +267,40 @@ const selectedCategory = ref('all');
 const mapBounds = ref(null); // 지도 범위를 추적하는 반응형 변수
 const mobileOverlayOpen = ref(false); // 모바일 오버레이 상태
 
+// 검색 및 필터 관련 상태
+const searchQuery = ref('');
+const filters = ref({
+  openOnly: false,
+  hasSeats: false
+});
+const toast = ref({ show: false, message: '', type: 'success' });
+
 // 필터링된 가게 목록
 const filteredStores = computed(() => {
   let filtered = stores.value;
   
+  // 검색어 필터링
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim();
+    filtered = filtered.filter(store => 
+      store.storeName.toLowerCase().includes(query) ||
+      store.storeLocation.toLowerCase().includes(query)
+    );
+  }
+  
   // 카테고리 필터링
   if (selectedCategory.value !== 'all') {
     filtered = filtered.filter(store => store.categoryCode === selectedCategory.value);
+  }
+  
+  // 영업중인 가게만 필터링
+  if (filters.value.openOnly) {
+    filtered = filtered.filter(store => store.openNow);
+  }
+  
+  // 예약 가능한 가게만 필터링
+  if (filters.value.hasSeats) {
+    filtered = filtered.filter(store => store.seatNum > 0);
   }
   
   // 지도 보기 모드일 때 지도 범위 내 가게만 필터링
@@ -557,6 +628,53 @@ const toggleMobileOverlay = () => {
   mobileOverlayOpen.value = !mobileOverlayOpen.value;
 };
 
+// 뒤로가기 함수
+const goBack = () => {
+  if (window.history.length > 1) {
+    router.go(-1);
+  } else {
+    router.push('/');
+  }
+};
+
+// 검색 처리 함수
+const handleSearch = () => {
+  // 검색어가 변경될 때마다 자동으로 필터링됨 (computed에서 처리)
+  if (searchQuery.value.trim()) {
+    showToast(`"${searchQuery.value}" 검색 결과: ${filteredStores.value.length}개`, 'info');
+  }
+};
+
+// 검색어 초기화
+const clearSearch = () => {
+  searchQuery.value = '';
+  showToast('검색어가 초기화되었습니다.', 'info');
+};
+
+// 필터 적용
+const applyFilters = () => {
+  const activeFilters = [];
+  if (filters.value.openOnly) activeFilters.push('영업중');
+  if (filters.value.hasSeats) activeFilters.push('예약가능');
+  
+  if (activeFilters.length > 0) {
+    showToast(`${activeFilters.join(', ')} 필터 적용: ${filteredStores.value.length}개`, 'info');
+  }
+};
+
+// 토스트 알림 표시
+const showToast = (message, type = 'success') => {
+  toast.value = { show: true, message, type };
+  setTimeout(() => {
+    hideToast();
+  }, 3000);
+};
+
+// 토스트 알림 숨기기
+const hideToast = () => {
+  toast.value.show = false;
+};
+
 const watchViewMode = async () => {
   console.log('viewMode 변경:', viewMode.value);
   if (viewMode.value === 'map') {
@@ -590,6 +708,136 @@ watch(selectedCategory, () => {
   margin: 0 auto;
   padding: 20px;
   font-family: 'Noto Sans KR', sans-serif;
+  position: relative;
+}
+
+/* 뒤로가기 버튼 */
+.back-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #666;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.back-button:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+/* 검색 섹션 */
+.search-section {
+  margin-bottom: 20px;
+}
+
+.search-container {
+  position: relative;
+  max-width: 500px;
+  margin: 0 auto 15px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 40px 12px 16px;
+  border: 2px solid #ddd;
+  border-radius: 25px;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: #ff5722;
+  box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.1);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #999;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.clear-search-btn:hover {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.search-filters {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #ff5722;
+}
+
+/* 토스트 알림 */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+  max-width: 300px;
+  word-wrap: break-word;
+}
+
+.toast.success {
+  background: #4caf50;
+}
+
+.toast.error {
+  background: #f44336;
+}
+
+.toast.info {
+  background: #2196f3;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .title {
@@ -1150,6 +1398,25 @@ watch(selectedCategory, () => {
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
+  .back-button {
+    top: 10px;
+    left: 10px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .search-container {
+    max-width: 100%;
+  }
+  
+  .search-filters {
+    gap: 15px;
+  }
+  
+  .filter-label {
+    font-size: 13px;
+  }
+  
   .map-view {
     position: relative;
     flex-direction: column;
@@ -1200,6 +1467,23 @@ watch(selectedCategory, () => {
 
 /* 작은 모바일 화면 */
 @media (max-width: 480px) {
+  .container {
+    padding: 15px;
+  }
+  
+  .search-input {
+    padding: 10px 35px 10px 14px;
+    font-size: 14px;
+  }
+  
+  .search-filters {
+    gap: 10px;
+  }
+  
+  .filter-label {
+    font-size: 12px;
+  }
+  
   .map-container {
     height: 250px;
     min-height: 200px;
