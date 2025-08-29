@@ -209,7 +209,7 @@ export const useUserStore = defineStore('user', {
         this.loading = false;
         
         // 7. AWS Cognito 세션 완전 종료를 위한 강제 로그아웃
-        const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=${encodeURIComponent('https://talkingpotato.shop')}`;
+        //const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=${encodeURIComponent('https://talkingpotato.shop')}`;
         
         // 8. AWS Cognito 로그아웃 후 바로 홈페이지로 리다이렉트
         // 새 탭에서 Cognito 로그아웃을 실행하고 현재 탭은 홈페이지로 이동
