@@ -97,9 +97,9 @@ export default {
                 document.cookie = "AWSELBCORS=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                 
                 // 모든 도메인에서 쿠키 삭제
-                document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost;";
-                document.cookie = "idToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost;";
-                document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost;";
+                document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=talkingpotato.shop;";
+                document.cookie = "idToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=talkingpotato.shop;";
+                document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=talkingpotato.shop;";
                 
                 // 세션 스토리지 완전 삭제
                 sessionStorage.clear();

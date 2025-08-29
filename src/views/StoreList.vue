@@ -268,11 +268,11 @@ const initMap = () => {
     return;
   }
 
-  // 서울 중심 좌표
-  const seoul = { lat: 37.5665, lng: 126.9780 };
+  // 강남 중심 좌표
+  const gangnam = { lat: 37.496667, lng: 127.0275 };
   
   map.value = new window.google.maps.Map(mapElement, {
-    center: seoul,
+    center: gangnam,
     zoom: 12,
     styles: [
       {

@@ -211,10 +211,6 @@ export default {
         const bookingResponse = await axios.post('/api/bookings/new', bookingRequest, { headers });
         console.log('예약 성공:', bookingResponse.data);
 
-        // 좌석 증가 로직 제거 (예약 생성 시점에 백엔드에서 처리)
-        // const incrementSeatResponse = await axios.post(`/api/stores/${storeId.value}/seats/increment?count=${count.value}`, null, { headers });
-        // console.log('좌석 증가 성공:', incrementSeatResponse.data);
-
         const bookingNum = bookingResponse.data.bookingNum;
 
         if (bookingNum) {
