@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import axios from '@/api/axios';
+import router from '@/router';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -222,12 +223,10 @@ export const useUserStore = defineStore('user', {
         }, 3000);
 
         // 3. 로그아웃 완료 팝업 표시
-        // 'alert' 대신 더 유연한 UI 컴포넌트(ex. SweetAlert2, Vue-Toast)를 사용하는 것이 좋습니다.
-        // 여기서는 예시로 alert를 사용합니다.
-        alert('로그아웃이 완료되었습니다.');
+        window.showLogoutSuccessModal = true;
 
         // 4. 팝업창을 닫은 후 메인 페이지로 이동
-        window.location.href = 'https://talkingpotato.shop';
+        router.push('/');
 
         // // 7. AWS Cognito 세션 완전 종료를 위한 강제 로그아웃
         // const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=https://talkingpotato.shop`;
