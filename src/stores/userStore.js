@@ -191,17 +191,8 @@ export const useUserStore = defineStore('user', {
           document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
         });
         
-        // 5. Cognito 관련 쿠키 특별 삭제
-        const cognitoCookies = [
-          'accessToken', 'idToken', 'refreshToken', 'CognitoIdentityServiceProvider',
-          'XSRF-TOKEN', 'AWSELB', 'AWSELBCORS', 'amplify-authenticator-authToken'
-        ];
-        
-        cognitoCookies.forEach(cookieName => {
-          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=talkingpotato.shop;`;
-          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.talkingpotato.shop;`;
-        });
+        // 5. 기본 쿠키만 삭제 (Cognito 관련 코드 제거)
+        // 로컬에서만 관리하는 토큰들만 삭제
         
         // 6. 로컬 스토리지 완전 삭제
         localStorage.clear();
