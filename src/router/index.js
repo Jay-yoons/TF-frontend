@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
+import axios from '@/api/axios';
 
 import HomePage from '../views/HomePage.vue';
 import BookingList from '../views/BookingList.vue';
@@ -15,6 +16,19 @@ import MyPage from '../views/MyPage.vue';
 import MyReviewsInStore from '../views/MyReviewsInStore.vue';
 
 const routes = [
+  {
+    path: '/login',
+    name: 'Login',
+    beforeEnter: async (to, from, next) => {
+      try {
+        const response = await axios.get('/api/users/login/url');
+        window.location.href = response.data.url;
+      } catch (err) {
+        console.error('로그인 URL을 불러오는 데 실패했습니다.', err);
+        next('/');
+      }
+    }
+  },
   {
     path: '/',
     name: 'HomePage',
