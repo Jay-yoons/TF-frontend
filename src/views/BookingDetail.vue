@@ -20,30 +20,14 @@
       <div v-if="booking.bookingState === 'CONFIRMED'">
         <button @click="cancelBooking" class="cancel-button">예약 취소</button>
       </div>
-             <div v-else-if="booking.bookingState === 'COMPLETED'">
-         <!-- 디버그 정보 (개발 중에만 표시) -->
-         <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 12px;">
-           <strong>디버그 정보:</strong><br>
-           hasReview: {{ hasReview }}<br>
-           storeId: {{ booking.storeId }}
-         </div>
-         
-         <router-link
-           v-if="!hasReview"
-           :to="{ name: 'ReviewCreate', params: { storeId: booking.storeId, bookingNum: booking.bookingNum } }"
-           class="review-button"
-         >
-           리뷰 작성
-         </router-link>
-         <button
-           v-else
-           class="review-button disabled"
-           disabled
-           style="background-color: #ccc; cursor: not-allowed;"
-         >
-           리뷰 작성 완료
-         </button>
-       </div>
+      <div v-else-if="booking.bookingState === 'COMPLETED'">
+        <router-link
+          :to="{ name: 'ReviewCreate', params: { storeId: booking.storeId, bookingNum: booking.bookingNum } }"
+          class="review-button"
+        >
+          리뷰 작성
+        </router-link>
+      </div>
       <p v-else>취소 또는 리뷰 작성할 수 없는 예약입니다.</p>
     </div>
     <div v-else>
@@ -59,7 +43,6 @@ import axios from '@/api/axios';
 
 const booking = ref(null);
 const storeName = ref('불러오는 중...'); // 가게 이름을 저장할 ref 추가
-const hasReview = ref(false);
 const route = useRoute();
 
 // 날짜와 시간을 포맷하는 함수 추가
@@ -73,45 +56,19 @@ const formatDateTime = (dateTimeStr) => {
 
 // 예약 상세 정보를 가져오는 함수
 const fetchBookingDetail = async (bookingNum) => {
-  const idToken = localStorage.getItem('idToken');
-  const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
+  const accessToken = localStorage.getItem('accessToken');
+  const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
 
   try {
     const response = await axios.get(`/api/bookings/${bookingNum}`, { headers });
     booking.value = response.data;
     
-    // 예약 정보가 성공적으로 로드되면 가게 이름과 리뷰 상태를 추가로 가져옵니다.
+    // 예약 정보가 성공적으로 로드되면 가게 이름을 추가로 가져옵니다.
     if (booking.value && booking.value.storeId) {
-      await Promise.all([
-        fetchStoreName(booking.value.storeId),
-        checkReviewStatus(booking.value.storeId)
-      ]);
+      await fetchStoreName(booking.value.storeId);
     }
   } catch (error) {
     console.error('예약 상세 정보를 가져오는 데 실패했습니다.', error);
-  }
-};
-
-// 리뷰 작성 여부 확인 함수
-const checkReviewStatus = async (storeId) => {
-  const idToken = localStorage.getItem('idToken');
-  if (!idToken) {
-    hasReview.value = false;
-    return;
-  }
-  
-  try {
-    const headers = { Authorization: `Bearer ${idToken}` };
-    const response = await axios.get(`/api/reviews/my/stores/${storeId}`, { headers });
-    
-    // 리뷰가 있으면 true, 없으면 false
-    hasReview.value = response.data.length > 0;
-    
-    console.log('리뷰 작성 상태 확인:', hasReview.value);
-    console.log('리뷰 데이터:', response.data);
-  } catch (error) {
-    console.error('리뷰 상태 확인 실패:', error);
-    hasReview.value = false;
   }
 };
 
@@ -128,12 +85,12 @@ const fetchStoreName = async (storeId) => {
 
 // 예약 취소 함수
 const cancelBooking = async () => {
-  const idToken = localStorage.getItem('idToken');
-  if (!idToken) {
+  const accessToken = localStorage.getItem('accessToken');
+  if (!accessToken) {
     alert('예약을 취소하려면 로그인이 필요합니다.');
     return;
   }
-  const headers = { Authorization: `Bearer ${idToken}` };
+  const headers = { Authorization: `Bearer ${accessToken}` };
   
   try {
     const cancelBookingResponse = await axios.patch(

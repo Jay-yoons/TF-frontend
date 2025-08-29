@@ -147,8 +147,7 @@
             <div v-if="userStore.isAuthenticated" class="store-actions-modal">
               <div class="action-buttons">
                 <button @click="goToBooking" class="action-btn primary">예약하기</button>
-                <button v-if="hasBooking && !hasReview" @click="goToReview" class="action-btn">리뷰 작성</button>
-                <button v-if="hasBooking && hasReview" class="action-btn disabled" disabled style="background-color: #ccc; cursor: not-allowed;">리뷰 작성 완료</button>
+                <button v-if="hasBooking" @click="goToReview" class="action-btn">리뷰 작성</button>
                 <button 
                   @click="toggleFavorite" 
                   :class="['action-btn', { 'favorite': isFavorite }]"
@@ -185,7 +184,6 @@ const markers = ref([]);
 const selectedStore = ref(null);
 const isFavorite = ref(false);
 const hasBooking = ref(false);
-const hasReview = ref(false);
 const selectedCategory = ref('all');
 const mapBounds = ref(null); // 지도 범위를 추적하는 반응형 변수
 
@@ -420,10 +418,8 @@ const openStoreModal = async (store) => {
   if (userStore.isAuthenticated) {
     isFavorite.value = await userStore.isFavoriteStore(store.storeId);
     await checkBookingStatus(store.storeId);
-    await checkReviewStatus(store.storeId);
   } else {
     hasBooking.value = false;
-    hasReview.value = false;
   }
 };
 
@@ -431,7 +427,6 @@ const closeStoreModal = () => {
   selectedStore.value = null;
   isFavorite.value = false;
   hasBooking.value = false;
-  hasReview.value = false;
 };
 
 const checkBookingStatus = async (storeId) => {
@@ -458,29 +453,6 @@ const checkBookingStatus = async (storeId) => {
   } catch (e) {
     console.error("예약 상태 확인 실패:", e);
     hasBooking.value = false;
-  }
-};
-
-const checkReviewStatus = async (storeId) => {
-  if (!userStore.isAuthenticated) {
-    hasReview.value = false;
-    return;
-  }
-  try {
-    const idToken = localStorage.getItem('idToken');
-    
-    // 사용자가 해당 가게에서 작성한 리뷰가 있는지 확인
-    const response = await axios.get(`/api/reviews/my/stores/${storeId}`, {
-      headers: { Authorization: `Bearer ${idToken}` }
-    });
-    
-    // 리뷰가 있으면 true, 없으면 false
-    hasReview.value = response.data.length > 0;
-    
-    console.log('리뷰 작성 상태 확인:', hasReview.value);
-  } catch (e) {
-    console.error("리뷰 상태 확인 실패:", e);
-    hasReview.value = false;
   }
 };
 

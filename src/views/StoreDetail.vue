@@ -70,20 +70,12 @@
         </router-link>
 
         <router-link
-          v-if="userStore.isAuthenticated && hasBooking && !hasReview"
+          v-if="userStore.isAuthenticated && hasBooking"
           :to="{ name: 'ReviewCreate', params: { storeId: store.storeId } }"
           class="action-button review-create-button"
         >
           리뷰 작성
         </router-link>
-        
-        <div
-          v-if="userStore.isAuthenticated && hasBooking && hasReview"
-          class="action-button review-create-button disabled"
-          style="background-color: #ccc; cursor: not-allowed;"
-        >
-          리뷰 작성 완료
-        </div>
 
         <router-link
           v-if="userStore.isAuthenticated"
@@ -117,7 +109,6 @@ export default {
     const error = ref(null);
     const isFavorite = ref(false);
     const hasBooking = ref(false);
-    const hasReview = ref(false);
 
     const fetchStoreDetail = async () => {
       try {
@@ -194,30 +185,6 @@ export default {
       }
     };
 
-    const checkReviewStatus = async () => {
-      if (!userStore.isAuthenticated) {
-        hasReview.value = false;
-        return;
-      }
-      try {
-        const storeId = route.params.storeId;
-        const idToken = localStorage.getItem('idToken');
-        
-        // 사용자가 해당 가게에서 작성한 리뷰가 있는지 확인
-        const response = await axios.get(`/api/reviews/my/stores/${storeId}`, {
-          headers: { Authorization: `Bearer ${idToken}` }
-        });
-        
-        // 리뷰가 있으면 true, 없으면 false
-        hasReview.value = response.data.length > 0;
-        
-        console.log('리뷰 작성 상태 확인:', hasReview.value);
-      } catch (e) {
-        console.error("리뷰 상태 확인 실패:", e);
-        hasReview.value = false;
-      }
-    };
-
     const toggleFavorite = async () => {
         if (!userStore.isAuthenticated) {
             alert("즐겨찾기 기능을 이용하려면 로그인이 필요합니다.");
@@ -251,7 +218,6 @@ export default {
       await fetchStoreDetail();
       await checkFavoriteStatus();
       await checkBookingStatus();
-      await checkReviewStatus();
     });
 
     // 영업시간 포맷팅 함수
@@ -311,7 +277,6 @@ export default {
       error,
       isFavorite,
       hasBooking,
-      hasReview,
       toggleFavorite,
       userStore,
       formatBusinessHours,
