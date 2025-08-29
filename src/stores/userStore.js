@@ -191,25 +191,16 @@ export const useUserStore = defineStore('user', {
           document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
         });
         
-        // 5. Cognito 관련 쿠키 특별 삭제
-        const cognitoCookies = [
-          'accessToken', 'idToken', 'refreshToken', 'CognitoIdentityServiceProvider',
-          'XSRF-TOKEN', 'AWSELB', 'AWSELBCORS', 'amplify-authenticator-authToken'
-        ];
-        
-        cognitoCookies.forEach(cookieName => {
-          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=talkingpotato.shop;`;
-          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.talkingpotato.shop;`;
-        });
+        // 5. 기본 쿠키만 삭제 (Cognito 관련 코드 제거)
+        // 로컬에서만 관리하는 토큰들만 삭제
         
         // 6. 로컬 스토리지 완전 삭제
         localStorage.clear();
         
         this.loading = false;
         
-        // 7. AWS Cognito 세션 완전 종료를 위한 강제 로그아웃
-        //const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=${encodeURIComponent('https://talkingpotato.shop')}`;
+        // 7. AWS Cognito 관련 코드 완전 제거
+        // 로컬 상태만 초기화하고 홈페이지로 리다이렉트
         
         // 8. AWS Cognito 로그아웃 후 바로 홈페이지로 리다이렉트
         // 새 탭에서 Cognito 로그아웃을 실행하고 현재 탭은 홈페이지로 이동
