@@ -115,32 +115,14 @@ export default {
       }
     };
 
-    const logout = async () => {
-      console.log('🚪 [DEBUG] ===== App.vue logout() 함수 시작 =====');
-      console.log('🚪 [DEBUG] 1. 현재 userStore 상태:', userStore.isAuthenticated);
-      console.log('🚪 [DEBUG] 2. 현재 URL:', window.location.href);
-      console.log('🚪 [DEBUG] 3. 현재 경로:', window.location.pathname);
-      
-      try {
-        console.log('🚪 [DEBUG] 4. userStore.logout() 호출 시작');
-        await userStore.logout();
-        console.log('✅ [DEBUG] 5. userStore.logout() 완료');
-      } catch (error) {
-        console.error('❌ [DEBUG] 6. userStore.logout() 오류:', error);
-        console.error('❌ [DEBUG] 7. 오류 스택:', error.stack);
-      }
-      
-      console.log('🚪 [DEBUG] 8. 모달 표시 시작');
+    const logout = () => {
+      userStore.logout();
       showMessageModal(
         '로그아웃 완료',
         '안전하게 로그아웃되었습니다.',
         '확인'
       );
-      
-      console.log('🚪 [DEBUG] 9. 홈페이지로 라우팅 시작');
       router.push('/');
-      console.log('🚪 [DEBUG] 10. 홈페이지 라우팅 완료');
-      console.log('🚪 [DEBUG] ===== App.vue logout() 함수 완료 =====');
     };
 
     return {

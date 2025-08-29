@@ -27,6 +27,12 @@ export default {
       // userStore의 logout 함수를 사용하여 /logout 경로 문제 해결
       userStore.logout()
       console.log('🔍 [DEBUG] userStore.logout() 호출 완료');
+      
+      // 2초 후 자동으로 홈페이지로 리다이렉트
+      setTimeout(() => {
+        console.log('🔍 [DEBUG] 자동 홈페이지 리다이렉트 실행');
+        this.goHome()
+      }, 2000)
     } else {
       console.error('❌ [ERROR] userStore를 찾을 수 없음');
     }

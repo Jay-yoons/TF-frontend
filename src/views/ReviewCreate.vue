@@ -17,38 +17,11 @@
           </div>
         </div>
         <div class="form-group">
-          <label for="comment">리뷰 내용 (최대 50자)</label>
-          <textarea 
-            id="comment" 
-            v-model="comment" 
-            rows="5" 
-            required
-            maxlength="50"
-            @input="checkCharacterLimit"
-            :class="{ 'error': isOverLimit }"
-          ></textarea>
-          <div class="character-count" :class="{ 'error': isOverLimit }">
-            {{ comment.length }}/50
-          </div>
+          <label for="comment">리뷰 내용</label>
+          <textarea id="comment" v-model="comment" rows="5" required></textarea>
         </div>
-        <button type="submit" class="submit-button" :disabled="isOverLimit">리뷰 제출</button>
+        <button type="submit" class="submit-button">리뷰 제출</button>
       </form>
-      </div>
-    </div>
-
-    <!-- 모달 -->
-    <div v-if="showModal" class="modal-overlay" @click="closeModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>알림</h3>
-          <button @click="closeModal" class="close-btn">×</button>
-        </div>
-        <div class="modal-body">
-          <p>{{ modalMessage }}</p>
-        </div>
-        <div class="modal-footer">
-          <button @click="closeModal" class="modal-btn">확인</button>
-        </div>
       </div>
     </div>
   </div>
@@ -68,76 +41,41 @@ export default {
     const comment = ref('');
     const hasBooking = ref(false);
     const loading = ref(true);
-    const isOverLimit = ref(false);
-    const showModal = ref(false);
-    const modalMessage = ref('');
 
     const submitReview = async () => {
-      // 이전처럼 'idToken'을 사용하도록 수정
-      const idToken = localStorage.getItem('idToken');
+    // 이전처럼 'idToken'을 사용하도록 수정
+    const idToken = localStorage.getItem('idToken');
+    
+    if (!idToken) {
+      alert('리뷰를 작성하려면 로그인이 필요합니다.');
+      return;
+    }
+    if (score.value === 0) {
+      alert('별점을 선택해주세요.');
+      return;
+    }
+    
+    const reviewRequestDto = {
+      storeId: route.params.storeId,
+      comment: comment.value,
+      score: score.value,
+    };
+    
+    console.log("전송 데이터:", reviewRequestDto);
+
+    try {
+      const headers = { Authorization: `Bearer ${idToken}` };
+      const response = await axios.post('/api/reviews', reviewRequestDto, { headers });
       
-      if (!idToken) {
-        showModalMessage('리뷰를 작성하려면 로그인이 필요합니다.');
-        return;
-      }
-      if (score.value === 0) {
-        showModalMessage('별점을 선택해주세요.');
-        return;
-      }
-      if (isOverLimit.value) {
-        showModalMessage('리뷰 내용이 50자를 초과했습니다. 내용을 줄여주세요.');
-        return;
-      }
+      alert('리뷰가 성공적으로 작성되었습니다.');
       
-      const reviewRequestDto = {
-        storeId: route.params.storeId,
-        comment: comment.value,
-        score: score.value,
-      };
-      
-      console.log("전송 데이터:", reviewRequestDto);
+      router.push({ name: 'ReviewDetail', params: { id: response.data.reviewId } });
 
-      try {
-        const headers = { Authorization: `Bearer ${idToken}` };
-        await axios.post('/api/reviews', reviewRequestDto, { headers });
-        
-        showModalMessage('리뷰가 성공적으로 작성되었습니다!');
-        
-        // 잠시 후 가게 상세 페이지로 이동 (리뷰 목록을 볼 수 있도록)
-        setTimeout(() => {
-          router.push({ name: 'StoreDetail', params: { storeId: route.params.storeId } });
-        }, 1500);
-
-      } catch (error) {
-        console.error('리뷰 작성 실패:', error);
-        if (error.response?.status === 409) {
-          showModalMessage('이미 해당 예약에 대한 리뷰를 작성하셨습니다.');
-        } else {
-          showModalMessage(`리뷰 작성에 실패했습니다: ${error.response?.data?.message || error.message}`);
-        }
-      }
-    };
-
-    // 글자 수 제한 확인 함수
-    const checkCharacterLimit = () => {
-      isOverLimit.value = comment.value.length > 50;
-      // 모달은 한 번만 표시하도록 수정 (너무 자주 뜨지 않도록)
-      if (isOverLimit.value && comment.value.length === 51) {
-        showModalMessage('리뷰 내용은 최대 50자까지 입력 가능합니다.');
-      }
-    };
-
-    // 모달 메시지 표시 함수
-    const showModalMessage = (message) => {
-      modalMessage.value = message;
-      showModal.value = true;
-    };
-
-    // 모달 닫기 함수
-    const closeModal = () => {
-      showModal.value = false;
-      modalMessage.value = '';
-    };
+    } catch (error) {
+      console.error('리뷰 작성 실패:', error);
+      alert(`리뷰 작성에 실패했습니다: ${error.message}`);
+    }
+};
 
     // 예약 여부 확인 함수
     const checkBookingStatus = async () => {
@@ -185,13 +123,7 @@ export default {
       comment,
       submitReview,
       hasBooking,
-      loading,
-      isOverLimit,
-      showModal,
-      modalMessage,
-      checkCharacterLimit,
-      showModalMessage,
-      closeModal
+      loading
     };
   },
 };
@@ -294,122 +226,6 @@ textarea:focus {
 }
 
 .submit-button:hover {
-  background-color: #e64a19;
-}
-
-.submit-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-.submit-button:disabled:hover {
-  background-color: #ccc;
-}
-
-/* 글자 수 카운터 스타일 */
-.character-count {
-  text-align: right;
-  font-size: 12px;
-  color: #666;
-  margin-top: 5px;
-}
-
-.character-count.error {
-  color: #f44336;
-}
-
-/* 에러 상태 텍스트 영역 */
-textarea.error {
-  border-color: #f44336;
-  box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.2);
-}
-
-/* 모달 스타일 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  padding: 0;
-  max-width: 400px;
-  width: 90%;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: #333;
-  font-size: 18px;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #666;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-btn:hover {
-  color: #333;
-}
-
-.modal-body {
-  padding: 20px;
-  text-align: center;
-}
-
-.modal-body p {
-  margin: 0;
-  color: #333;
-  font-size: 16px;
-  line-height: 1.5;
-}
-
-.modal-footer {
-  padding: 20px;
-  border-top: 1px solid #eee;
-  text-align: center;
-}
-
-.modal-btn {
-  padding: 10px 20px;
-  background-color: #ff5722;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-}
-
-.modal-btn:hover {
   background-color: #e64a19;
 }
 </style>
