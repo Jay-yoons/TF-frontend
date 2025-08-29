@@ -35,11 +35,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-
-const router = useRouter();
-const route = useRoute();
+import { ref } from 'vue';
 
 // 반응형 데이터
 const toast = ref({ show: false, message: '', type: 'success' });
