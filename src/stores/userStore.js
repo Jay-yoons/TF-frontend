@@ -157,19 +157,14 @@ export const useUserStore = defineStore('user', {
       sessionStorage.setItem('logoutInProgress', 'true');
       
       try {
-        // 1. 백엔드 로그아웃 API 호출 (응답 무시)
-        if (this.accessToken) {
-          try {
-            await axios.post('/api/users/logout', null, {
-              headers: {
-                Authorization: `Bearer ${this.accessToken}`
-              }
-            });
-          } catch (e) {
-            // 백엔드 오류가 발생해도 로컬 상태는 초기화
-            console.log('백엔드 로그아웃 API 오류 (무시):', e);
-          }
-        }
+        // 1. 백엔드 로그아웃 API 호출
+        // if (this.accessToken) {
+        //   await axios.post('/api/users/logout', null, {
+        //     headers: {
+        //       Authorization: `Bearer ${this.accessToken}`
+        //     }
+        //   });
+        // }
         
         // 2. 모든 로컬 상태 초기화
         this.user = null;
@@ -196,21 +191,28 @@ export const useUserStore = defineStore('user', {
           document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
         });
         
-        // 5. 기본 쿠키만 삭제 (Cognito 관련 코드 제거)
-        // 로컬에서만 관리하는 토큰들만 삭제
+        // 5. Cognito 관련 쿠키 특별 삭제
+        const cognitoCookies = [
+          'accessToken', 'idToken', 'refreshToken', 'CognitoIdentityServiceProvider',
+          'XSRF-TOKEN', 'AWSELB', 'AWSELBCORS', 'amplify-authenticator-authToken'
+        ];
+        
+        cognitoCookies.forEach(cookieName => {
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=talkingpotato.shop;`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.talkingpotato.shop;`;
+        });
         
         // 6. 로컬 스토리지 완전 삭제
         localStorage.clear();
         
         this.loading = false;
         
-        // 7. AWS Cognito 관련 코드 완전 제거
-        // 로컬 상태만 초기화하고 홈페이지로 리다이렉트
+        // 7. AWS Cognito 세션 완전 종료를 위한 강제 로그아웃
+        const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=https://talkingpotato.shop`;
         
-        // 8. AWS Cognito 로그아웃 후 바로 홈페이지로 리다이렉트
-        // 새 탭에서 Cognito 로그아웃을 실행하고 현재 탭은 홈페이지로 이동
-        //window.open(cognitoLogoutUrl, '_blank');
-        window.location.href = 'https://talkingpotato.shop';
+        // 8. AWS Cognito 로그아웃 페이지로 이동하여 세션 완전 종료
+        window.location.href = cognitoLogoutUrl;
         
       } catch (e) {
         console.error('로그아웃 중 오류:', e);
