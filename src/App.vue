@@ -117,12 +117,8 @@ export default {
 
     const logout = () => {
       userStore.logout();
-      showMessageModal(
-        '로그아웃 완료',
-        '안전하게 로그아웃되었습니다.',
-        '확인'
-      );
-      router.push('/');
+      // userStore.logout()에서 이미 홈페이지로 리다이렉트되므로 
+      // 여기서는 추가 작업이 필요하지 않습니다
     };
 
     return {
