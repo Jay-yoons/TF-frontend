@@ -90,31 +90,66 @@
         </div>
       </div>
 
-      <div v-else-if="viewMode === 'map'" class="map-view">
-        <div id="map" class="map-container"></div>
-        <div class="map-sidebar">
-          <h3>가게 목록</h3>
-          <div class="map-store-list">
-            <div 
-              v-for="store in filteredStores" 
-              :key="store.storeId" 
-              class="map-store-item"
-              @click="moveToStore(store)"
-            >
-              <h4>{{ store.storeName }}</h4>
-              <p>{{ store.storeLocation }}</p>
-              <p class="business-hours">영업시간: {{ formatBusinessHours(store.openTime, store.closeTime) }}</p>
-              <span class="store-category">{{ getCategoryName(store.categoryCode) }}</span>
-              <span :class="['status-badge', { 'open': store.openNow, 'closed': !store.openNow }]">
-                {{ store.openStatus }}
-              </span>
-                          <div class="map-store-actions">
-              <button @click.stop="openStoreModal(store)" class="action-btn primary">상세 정보</button>
-            </div>
-            </div>
-          </div>
-        </div>
-      </div>
+             <div v-else-if="viewMode === 'map'" class="map-view">
+         <div id="map" class="map-container"></div>
+         <div class="map-sidebar">
+           <h3>가게 목록</h3>
+           <div class="map-store-list">
+             <div 
+               v-for="store in filteredStores" 
+               :key="store.storeId" 
+               class="map-store-item"
+               @click="moveToStore(store)"
+             >
+               <h4>{{ store.storeName }}</h4>
+               <p>{{ store.storeLocation }}</p>
+               <p class="business-hours">영업시간: {{ formatBusinessHours(store.openTime, store.closeTime) }}</p>
+               <span class="store-category">{{ getCategoryName(store.categoryCode) }}</span>
+               <span :class="['status-badge', { 'open': store.openNow, 'closed': !store.openNow }]">
+                 {{ store.openStatus }}
+               </span>
+               <div class="map-store-actions">
+                 <button @click.stop="openStoreModal(store)" class="action-btn primary">상세 정보</button>
+               </div>
+             </div>
+           </div>
+         </div>
+         <!-- 모바일용 오버레이 목록 -->
+         <div :class="['mobile-store-overlay', { 'open': mobileOverlayOpen }]">
+           <div class="mobile-store-header">
+             <h3>가게 목록 ({{ filteredStores.length }}개)</h3>
+             <button class="close-overlay-btn" @click="toggleMobileOverlay">×</button>
+           </div>
+           <div class="mobile-store-list">
+             <div 
+               v-for="store in filteredStores" 
+               :key="store.storeId" 
+               class="mobile-store-item"
+               @click="moveToStore(store)"
+             >
+               <div class="mobile-store-info">
+                 <h4>{{ store.storeName }}</h4>
+                 <p>{{ store.storeLocation }}</p>
+                 <p class="business-hours">영업시간: {{ formatBusinessHours(store.openTime, store.closeTime) }}</p>
+                 <div class="mobile-store-badges">
+                   <span class="store-category">{{ getCategoryName(store.categoryCode) }}</span>
+                   <span :class="['status-badge', { 'open': store.openNow, 'closed': !store.openNow }]">
+                     {{ store.openStatus }}
+                   </span>
+                 </div>
+               </div>
+               <div class="mobile-store-actions">
+                 <button @click.stop="openStoreModal(store)" class="action-btn primary">상세</button>
+               </div>
+             </div>
+           </div>
+         </div>
+         <!-- 모바일용 목록 토글 버튼 -->
+         <button class="mobile-list-toggle" @click="toggleMobileOverlay">
+           <span class="toggle-icon">📋</span>
+           <span class="toggle-text">가게 목록</span>
+         </button>
+       </div>
 
       <div v-if="selectedStore" class="modal-overlay" @click="closeStoreModal">
         <div class="modal-content" @click.stop>
@@ -186,6 +221,7 @@ const isFavorite = ref(false);
 const hasBooking = ref(false);
 const selectedCategory = ref('all');
 const mapBounds = ref(null); // 지도 범위를 추적하는 반응형 변수
+const mobileOverlayOpen = ref(false); // 모바일 오버레이 상태
 
 // 필터링된 가게 목록
 const filteredStores = computed(() => {
@@ -514,6 +550,11 @@ const toggleFavorite = async () => {
   } catch (error) {
     console.error('즐겨찾기 토글 실패:', error);
   }
+};
+
+// 모바일 오버레이 토글 함수
+const toggleMobileOverlay = () => {
+  mobileOverlayOpen.value = !mobileOverlayOpen.value;
 };
 
 const watchViewMode = async () => {
@@ -973,9 +1014,144 @@ watch(selectedCategory, () => {
   text-decoration: underline;
 }
 
+/* 모바일 오버레이 스타일 */
+.mobile-store-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 100;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  display: none;
+}
+
+.mobile-store-overlay.open {
+  transform: translateY(0);
+}
+
+.mobile-store-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: #ff5722;
+  color: white;
+  border-radius: 12px 12px 0 0;
+}
+
+.mobile-store-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.close-overlay-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-store-list {
+  padding: 15px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.mobile-store-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-store-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.mobile-store-info {
+  flex: 1;
+}
+
+.mobile-store-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}
+
+.mobile-store-info p {
+  margin: 0 0 4px 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.mobile-store-badges {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.mobile-store-actions {
+  margin-left: 10px;
+}
+
+.mobile-list-toggle {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #ff5722;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3);
+  display: none;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 50;
+  transition: all 0.3s ease;
+}
+
+.mobile-list-toggle:hover {
+  background: #e64a19;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 87, 34, 0.4);
+}
+
+.toggle-icon {
+  font-size: 16px;
+}
+
+.toggle-text {
+  display: none;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .map-view {
+    position: relative;
     flex-direction: column;
     height: auto;
     gap: 10px;
@@ -985,31 +1161,27 @@ watch(selectedCategory, () => {
     height: 300px;
     min-height: 250px;
     border-radius: 8px;
+    position: relative;
   }
   
   .map-sidebar {
-    width: 100%;
-    padding: 15px;
-    max-height: 400px;
-    overflow-y: auto;
+    display: none; /* 데스크톱 사이드바 숨김 */
   }
   
-  .map-sidebar h3 {
-    font-size: 16px;
-    margin-bottom: 15px;
+  .mobile-store-overlay {
+    display: block;
   }
   
-  .map-store-item {
-    padding: 12px;
-    margin-bottom: 8px;
+  .mobile-store-overlay.open {
+    transform: translateY(0);
   }
   
-  .map-store-item h4 {
-    font-size: 13px;
+  .mobile-list-toggle {
+    display: flex;
   }
   
-  .map-store-item p {
-    font-size: 11px;
+  .toggle-text {
+    display: inline;
   }
   
   .stores-grid {
@@ -1033,26 +1205,60 @@ watch(selectedCategory, () => {
     min-height: 200px;
   }
   
-  .map-sidebar {
+  .mobile-store-overlay {
+    background: rgba(255, 255, 255, 0.98);
+  }
+  
+  .mobile-store-header {
+    padding: 12px 15px;
+  }
+  
+  .mobile-store-header h3 {
+    font-size: 14px;
+  }
+  
+  .mobile-store-list {
     padding: 12px;
-    max-height: 350px;
+    max-height: calc(100vh - 180px);
   }
   
-  .map-store-item {
+  .mobile-store-item {
     padding: 10px;
+    margin-bottom: 8px;
   }
   
-  .map-store-item h4 {
-    font-size: 12px;
+  .mobile-store-info h4 {
+    font-size: 13px;
   }
   
-  .map-store-item p {
-    font-size: 10px;
+  .mobile-store-info p {
+    font-size: 11px;
+  }
+  
+  .mobile-store-badges {
+    gap: 6px;
+    margin-top: 4px;
   }
   
   .store-category {
     font-size: 9px;
     padding: 1px 6px;
+  }
+  
+  .status-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+  
+  .mobile-list-toggle {
+    bottom: 15px;
+    right: 15px;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  
+  .toggle-text {
+    display: none; /* 작은 화면에서는 아이콘만 표시 */
   }
   
   .detail-link {
