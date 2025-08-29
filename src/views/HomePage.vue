@@ -1,9 +1,5 @@
 <template>
   <div class="home-page-container">
-    <!-- 뒤로가기 버튼 -->
-    <button v-if="showBackButton" @click="goBack" class="back-button">
-      ← 뒤로가기
-    </button>
 
     <header class="home-header">
       <h1 class="home-title">
@@ -14,21 +10,14 @@
       </p>
     </header>
 
-              <main class="main-content">
-       <!-- 메인 액션 카드 -->
+    <main class="main-content">
+      <!-- 메인 액션 카드 -->
       <section class="main-actions">
         <div class="card-grid">
           <router-link to="/stores" class="action-card">
             <div class="icon-placeholder">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
             </div>
@@ -55,32 +44,10 @@ const route = useRoute();
 // 반응형 데이터
 const toast = ref({ show: false, message: '', type: 'success' });
 
-
-
-// 뒤로가기 버튼 표시 여부
-const showBackButton = computed(() => {
-  return route.name !== 'HomePage' || document.referrer.includes(window.location.origin);
-});
-
-
-
-
-
-// 뒤로가기
-const goBack = () => {
-  if (window.history.length > 1) {
-    router.go(-1);
-  } else {
-    router.push('/');
-  }
-};
-
 // 토스트 알림 숨기기
 const hideToast = () => {
   toast.value.show = false;
 };
-
-
 </script>
 
 <style scoped>
@@ -91,26 +58,6 @@ const hideToast = () => {
   background-color: #f5f5f5;
   min-height: 100vh;
   position: relative;
-}
-
-/* 뒤로가기 버튼 */
-.back-button {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #666;
-  transition: all 0.2s ease;
-}
-
-.back-button:hover {
-  background: #f5f5f5;
-  border-color: #ccc;
 }
 
 .home-header {
@@ -147,14 +94,6 @@ const hideToast = () => {
   margin-bottom: 20px;
   text-align: left;
 }
-
-
-
-
-
-
-
-
 
 /* 메인 액션 카드 */
 .main-actions {
@@ -232,6 +171,7 @@ const hideToast = () => {
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -250,20 +190,13 @@ const hideToast = () => {
   .home-title {
     font-size: 28px;
   }
-  
-  .back-button {
-    top: 10px;
-    left: 10px;
-    padding: 6px 12px;
-    font-size: 12px;
-  }
 }
 
 @media (max-width: 480px) {
   .home-page-container {
     padding: 15px;
   }
-  
+
   .section-title {
     font-size: 20px;
   }
