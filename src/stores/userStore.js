@@ -157,13 +157,18 @@ export const useUserStore = defineStore('user', {
       sessionStorage.setItem('logoutInProgress', 'true');
       
       try {
-        // 1. 백엔드 로그아웃 API 호출
+        // 1. 백엔드 로그아웃 API 호출 (응답 무시)
         if (this.accessToken) {
-          await axios.post('/api/users/logout', null, {
-            headers: {
-              Authorization: `Bearer ${this.accessToken}`
-            }
-          });
+          try {
+            await axios.post('/api/users/logout', null, {
+              headers: {
+                Authorization: `Bearer ${this.accessToken}`
+              }
+            });
+          } catch (e) {
+            // 백엔드 오류가 발생해도 로컬 상태는 초기화
+            console.log('백엔드 로그아웃 API 오류 (무시):', e);
+          }
         }
         
         // 2. 모든 로컬 상태 초기화
