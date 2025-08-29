@@ -17,7 +17,7 @@ export const useUserStore = defineStore('user', {
     async initializeStore() {
       // 로그아웃 후 자동 로그인 방지를 위한 추가 검증
       const isLogoutFlow = sessionStorage.getItem('logoutInProgress');
-      
+
       // 로그아웃 플로우 중이면 자동 로그인 방지
       if (isLogoutFlow === 'true') {
         console.log('로그아웃 플로우 감지. 자동 로그인 방지.');
@@ -25,7 +25,7 @@ export const useUserStore = defineStore('user', {
         this.clearAllData();
         return;
       }
-      
+
       this.accessToken = localStorage.getItem('accessToken');
       this.idToken = localStorage.getItem('idToken');
       this.refreshToken = localStorage.getItem('refreshToken');
@@ -152,10 +152,10 @@ export const useUserStore = defineStore('user', {
 
     async logout() {
       this.loading = true;
-      
+
       // 로그아웃 플로우 시작 플래그 설정
       sessionStorage.setItem('logoutInProgress', 'true');
-      
+
       try {
         // 1. 백엔드 로그아웃 API 호출
         // if (this.accessToken) {
@@ -165,7 +165,7 @@ export const useUserStore = defineStore('user', {
         //     }
         //   });
         // }
-        
+
         // 2. 모든 로컬 상태 초기화
         this.user = null;
         this.isAuthenticated = false;
@@ -179,45 +179,66 @@ export const useUserStore = defineStore('user', {
         localStorage.removeItem('idToken');
         localStorage.removeItem('refreshToken');
         sessionStorage.clear();
-        
+
         // 3. 브라우저 캐시 완전 삭제
         if ('caches' in window) {
           const cacheNames = await caches.keys();
           await Promise.all(cacheNames.map(name => caches.delete(name)));
         }
-        
+
         // 4. 모든 쿠키 강제 삭제 (더 강력한 방법)
-        document.cookie.split(";").forEach(function(c) { 
-          document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        document.cookie.split(";").forEach(function (c) {
+          document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
         });
-        
+
         // 5. Cognito 관련 쿠키 특별 삭제
         const cognitoCookies = [
           'accessToken', 'idToken', 'refreshToken', 'CognitoIdentityServiceProvider',
           'XSRF-TOKEN', 'AWSELB', 'AWSELBCORS', 'amplify-authenticator-authToken'
         ];
-        
+
         cognitoCookies.forEach(cookieName => {
           document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
           document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=talkingpotato.shop;`;
           document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.talkingpotato.shop;`;
         });
-        
+
         // 6. 로컬 스토리지 완전 삭제
         localStorage.clear();
-        
+
         this.loading = false;
-        
-        // 7. AWS Cognito 세션 완전 종료를 위한 강제 로그아웃
+
+
+        // 2. 백그라운드에서 Cognito 로그아웃 처리
         const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=https://talkingpotato.shop`;
-        
-        // 8. AWS Cognito 로그아웃 페이지로 이동하여 세션 완전 종료
-        window.location.href = cognitoLogoutUrl;
-        
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = cognitoLogoutUrl;
+        document.body.appendChild(iframe);
+
+        // iframe 제거를 위한 타임아웃
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 3000);
+
+        // 3. 로그아웃 완료 팝업 표시
+        // 'alert' 대신 더 유연한 UI 컴포넌트(ex. SweetAlert2, Vue-Toast)를 사용하는 것이 좋습니다.
+        // 여기서는 예시로 alert를 사용합니다.
+        alert('로그아웃이 완료되었습니다.');
+
+        // 4. 팝업창을 닫은 후 메인 페이지로 이동
+        window.location.href = 'https://talkingpotato.shop';
+
+        // // 7. AWS Cognito 세션 완전 종료를 위한 강제 로그아웃
+        // const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=https://talkingpotato.shop`;
+
+        // // 8. AWS Cognito 로그아웃 페이지로 이동하여 세션 완전 종료
+        // window.location.href = cognitoLogoutUrl;
+
       } catch (e) {
         console.error('로그아웃 중 오류:', e);
         this.error = '로그아웃 중 문제가 발생했지만 클라이언트 상태는 초기화되었습니다.';
-        
+
         // 오류가 발생해도 로컬 상태는 초기화
         this.user = null;
         this.isAuthenticated = false;
@@ -231,9 +252,9 @@ export const useUserStore = defineStore('user', {
         localStorage.removeItem('idToken');
         localStorage.removeItem('refreshToken');
         sessionStorage.clear();
-        
+
         this.loading = false;
-        
+
         // 오류 시에도 메인페이지로 이동
         window.location.href = 'https://talkingpotato.shop';
       }
