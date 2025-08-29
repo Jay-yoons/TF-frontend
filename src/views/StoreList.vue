@@ -48,62 +48,7 @@
         </div>
       </div>
       
-      <!-- 인기 가게 섹션 -->
-      <section class="popular-stores-section">
-        <h2 class="section-title">인기 가게</h2>
-        <div v-if="loadingPopularStores" class="skeleton-grid">
-          <div v-for="i in 3" :key="i" class="store-skeleton">
-            <div class="skeleton-image"></div>
-            <div class="skeleton-content">
-              <div class="skeleton-title"></div>
-              <div class="skeleton-text"></div>
-              <div class="skeleton-text short"></div>
-            </div>
-          </div>
-        </div>
-        <div v-else-if="popularStores.length > 0" class="popular-stores-grid">
-          <div 
-            v-for="store in popularStores.slice(0, 3)" 
-            :key="store.storeId" 
-            class="popular-store-card"
-            @click="goToStore(store.storeId)"
-          >
-            <div class="store-image">
-              <img 
-                :src="store.imageUrl || '/default-store.jpg'" 
-                :alt="store.storeName"
-                @error="handleImageError"
-              />
-            </div>
-                         <div class="store-info">
-               <h3 class="store-name">{{ store.storeName }}</h3>
-               <p class="store-location">{{ store.storeLocation }}</p>
-               <div class="store-meta">
-                 <span class="store-category">{{ getCategoryName(store.categoryCode) }}</span>
-                 <span :class="['status-badge', { 'open': store.openNow, 'closed': !store.openNow }]">
-                   {{ store.openStatus }}
-                 </span>
-               </div>
-               <div class="popularity-info">
-                 <div class="rating-info">
-                   <span class="stars">
-                     <span v-for="i in Math.floor(store.averageRating)" :key="i" class="star">★</span>
-                     <span v-for="i in (5 - Math.floor(store.averageRating))" :key="i" class="star empty">☆</span>
-                   </span>
-                   <span class="rating-text">{{ store.averageRating.toFixed(1) }} ({{ store.reviewCount }}개)</span>
-                 </div>
-                 <div class="stats-info">
-                   <span class="stat-item">예약 {{ store.bookingCount }}회</span>
-                   <span class="stat-item">♥ {{ store.favoriteCount }}</span>
-                 </div>
-               </div>
-             </div>
-          </div>
-        </div>
-        <div v-else class="empty-state">
-          <p>인기 가게를 불러오는 중...</p>
-        </div>
-      </section>
+             
       
       <div class="category-filter">
         <button 
@@ -332,9 +277,7 @@ const filters = ref({
 });
 const toast = ref({ show: false, message: '', type: 'success' });
 
-// 인기 가게 관련 상태
-const popularStores = ref([]);
-const loadingPopularStores = ref(false);
+
 
 // 필터링된 가게 목록
 const filteredStores = computed(() => {
@@ -393,96 +336,7 @@ const fetchStores = async () => {
   }
 };
 
-// 인기 가게 불러오기
-const fetchPopularStores = async () => {
-  loadingPopularStores.value = true;
-  try {
-    const response = await axios.get('/api/stores');
-    
-    // 각 가게의 상세 정보를 가져와서 복합 점수 계산
-    const storesWithScores = await Promise.all(
-      response.data
-        .filter(store => store.openNow) // 영업중인 가게만
-        .map(async (store) => {
-          try {
-            // 가게별 리뷰 정보 가져오기 (전체 리뷰에서 필터링)
-            const allReviewsResponse = await axios.get('/api/reviews');
-            const allReviews = allReviewsResponse.data || [];
-            const storeReviews = allReviews.filter(review => review.storeId === store.storeId);
-            
-            // 가게별 예약 정보 가져오기 (전체 예약에서 필터링)
-            const allBookingsResponse = await axios.get('/api/bookings');
-            const allBookings = allBookingsResponse.data || [];
-            const storeBookings = allBookings.filter(booking => booking.storeId === store.storeId);
-            
-            // 가게별 즐겨찾기 수 가져오기 (전체 즐겨찾기에서 필터링)
-            const allFavoritesResponse = await axios.get('/api/favorites');
-            const allFavorites = allFavoritesResponse.data || [];
-            const storeFavorites = allFavorites.filter(favorite => favorite.storeId === store.storeId);
-            
-            // 복합 점수 계산
-            const score = calculatePopularityScore(storeReviews, storeBookings, storeFavorites);
-            
-            return {
-              ...store,
-              popularityScore: score,
-              reviewCount: storeReviews.length,
-              averageRating: storeReviews.length > 0 
-                ? storeReviews.reduce((sum, review) => sum + review.score, 0) / storeReviews.length 
-                : 0,
-              bookingCount: storeBookings.filter(b => b.bookingStateCode === 2).length, // 완료된 예약만
-              favoriteCount: storeFavorites.length
-            };
-          } catch (error) {
-            console.error(`가게 ${store.storeId} 정보 가져오기 실패:`, error);
-            // 에러가 발생한 경우 기본 점수 부여
-            return {
-              ...store,
-              popularityScore: 0,
-              reviewCount: 0,
-              averageRating: 0,
-              bookingCount: 0,
-              favoriteCount: 0
-            };
-          }
-        })
-    );
-    
-    // 복합 점수로 정렬하여 상위 6개 선택
-    popularStores.value = storesWithScores
-      .sort((a, b) => b.popularityScore - a.popularityScore)
-      .slice(0, 6);
-      
-  } catch (error) {
-    console.error('인기 가게 불러오기 실패:', error);
-    showToast('인기 가게를 불러오는데 실패했습니다.', 'error');
-  } finally {
-    loadingPopularStores.value = false;
-  }
-};
 
-// 복합 점수 계산 함수
-const calculatePopularityScore = (reviews, bookings, favorites) => {
-  const reviewCount = reviews.length;
-  const averageRating = reviewCount > 0 
-    ? reviews.reduce((sum, review) => sum + review.score, 0) / reviewCount 
-    : 0;
-  const completedBookings = bookings.filter(b => b.bookingStateCode === 2).length; // 완료된 예약만
-  const favoriteCount = favorites.length;
-  
-  // 각 요소별 점수 계산 (가중치 적용)
-  const ratingScore = averageRating * 20; // 평점 * 20 (최대 100점)
-  const reviewScore = Math.min(reviewCount * 2, 50); // 리뷰 수 * 2 (최대 50점)
-  const bookingScore = Math.min(completedBookings * 3, 30); // 완료 예약 수 * 3 (최대 30점)
-  const favoriteScore = Math.min(favoriteCount * 5, 20); // 즐겨찾기 수 * 5 (최대 20점)
-  
-  // 최소 리뷰 수 조건 (리뷰가 3개 미만이면 점수 감점)
-  const reviewPenalty = reviewCount < 3 ? -20 : 0;
-  
-  const totalScore = ratingScore + reviewScore + bookingScore + favoriteScore + reviewPenalty;
-  
-  return Math.max(totalScore, 0); // 음수 방지
-};
 
 const getCategoryName = (categoryCode) => {
   const categories = {
@@ -747,10 +601,7 @@ const handleImageError = (event) => {
   event.target.src = 'https://fog-object.s3.ap-northeast-2.amazonaws.com/store/default-store.png';
 };
 
-// 인기 가게로 이동
-const goToStore = (storeId) => {
-  router.push({ name: 'StoreDetail', params: { storeId } });
-};
+
 
 const goToBooking = () => {
   if (selectedStore.value) {
@@ -784,6 +635,8 @@ const toggleFavorite = async () => {
 const toggleMobileOverlay = () => {
   mobileOverlayOpen.value = !mobileOverlayOpen.value;
 };
+
+
 
 // 뒤로가기 함수
 const goBack = () => {
@@ -844,7 +697,6 @@ const watchViewMode = async () => {
 
 onMounted(() => {
   fetchStores();
-  fetchPopularStores();
 });
 
 // viewMode 변경 감지
@@ -1017,205 +869,9 @@ watch(selectedCategory, () => {
   color: #ff5722;
 }
 
-/* 인기 가게 섹션 */
-.popular-stores-section {
-  margin-bottom: 40px;
-}
 
-.section-title {
-  font-size: 24px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 20px;
-  text-align: left;
-}
 
-.popular-stores-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
-}
 
-.popular-store-card {
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.popular-store-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-}
-
-.popular-store-card .store-image {
-  height: 200px;
-  overflow: hidden;
-}
-
-.popular-store-card .store-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.popular-store-card .store-info {
-  padding: 15px;
-}
-
-.popular-store-card .store-name {
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 5px;
-}
-
-.popular-store-card .store-location {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 10px;
-}
-
-.popular-store-card .store-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.popular-store-card .store-category {
-  background: #ff5722;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.popular-store-card .status-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.popular-store-card .status-badge.open {
-  background: #4caf50;
-  color: white;
-}
-
-.popular-store-card .status-badge.closed {
-  background: #f44336;
-  color: white;
-}
-
-/* 인기도 정보 스타일 */
-.popularity-info {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid #eee;
-}
-
-.rating-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.stars {
-  display: flex;
-  gap: 1px;
-}
-
-.star {
-  color: #ffd700;
-  font-size: 12px;
-}
-
-.star.empty {
-  color: #ddd;
-}
-
-.rating-text {
-  font-size: 12px;
-  color: #666;
-  font-weight: 500;
-}
-
-.stats-info {
-  display: flex;
-  gap: 12px;
-}
-
-.stat-item {
-  font-size: 11px;
-  color: #888;
-  background: #f5f5f5;
-  padding: 2px 6px;
-  border-radius: 8px;
-}
-
-/* 스켈레톤 UI */
-.skeleton-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.store-skeleton {
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.skeleton-image {
-  height: 200px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-}
-
-.skeleton-content {
-  padding: 15px;
-}
-
-.skeleton-title {
-  height: 20px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-  margin-bottom: 10px;
-  border-radius: 4px;
-}
-
-.skeleton-text {
-  height: 14px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-  margin-bottom: 8px;
-  border-radius: 4px;
-}
-
-.skeleton-text.short {
-  width: 60%;
-}
-
-@keyframes loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.empty-state {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-}
 
 /* 카테고리 필터 스타일 */
 .category-filter {
@@ -1813,9 +1469,7 @@ watch(selectedCategory, () => {
     grid-template-columns: 1fr;
   }
   
-  .popular-stores-grid {
-    grid-template-columns: 1fr;
-  }
+
   
   .toggle-buttons {
     margin-bottom: 15px;
