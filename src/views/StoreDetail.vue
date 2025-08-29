@@ -2,7 +2,7 @@
   <div class="container">
     <!-- 뒤로가기 버튼 -->
     <button @click="goBack" class="back-button">
-      ← 뒤로가기
+      ← 가게 목록 보기
     </button>
 
     <div v-if="loading" class="status-message">
@@ -228,11 +228,7 @@ export default {
 
     // 뒤로가기 함수
     const goBack = () => {
-      if (window.history.length > 1) {
-        router.go(-1);
-      } else {
-        router.push('/stores');
-      }
+      router.push('/stores');
     };
 
     // 토스트 알림 표시
