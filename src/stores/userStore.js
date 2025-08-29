@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import axios from '@/api/axios';
-import router from '@/router';
+import router from '@/router'; // eslint-disable-line no-unused-vars
 
 export const useUserStore = defineStore('user', {
   state: () => ({
