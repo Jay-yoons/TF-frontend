@@ -213,7 +213,7 @@ export const useUserStore = defineStore('user', {
         
         // 8. AWS Cognito 로그아웃 후 바로 홈페이지로 리다이렉트
         // 새 탭에서 Cognito 로그아웃을 실행하고 현재 탭은 홈페이지로 이동
-        window.open(cognitoLogoutUrl, '_blank');
+        //window.open(cognitoLogoutUrl, '_blank');
         window.location.href = 'https://talkingpotato.shop';
         
       } catch (e) {
