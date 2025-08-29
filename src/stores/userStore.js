@@ -210,29 +210,30 @@ export const useUserStore = defineStore('user', {
         this.loading = false;
 
 
-        // 2. 백그라운드에서 Cognito 로그아웃 처리
+        // 2. Cognito 세션 완전 종료를 위한 강제 로그아웃
         const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=https://talkingpotato.shop`;
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = cognitoLogoutUrl;
-        document.body.appendChild(iframe);
+        
+        // 3. 로그아웃 진행 상태 표시
+        console.log('Cognito 로그아웃 페이지로 이동 중...');
+        
+        // 4. 히스토리 조작으로 뒤로가기 방지
+        window.history.replaceState(null, '', window.location.href);
+        
+        // 5. Cognito 로그아웃 페이지로 이동 (타임아웃 설정)
+        const logoutTimeout = setTimeout(() => {
+          console.error('Cognito 로그아웃 타임아웃. 메인 페이지로 이동합니다.');
+          window.location.href = 'https://talkingpotato.shop';
+        }, 10000); // 10초 타임아웃
+        
+        // 6. 페이지 이동 전 타임아웃 클리어
+        window.addEventListener('beforeunload', () => {
+          clearTimeout(logoutTimeout);
+        });
+        
+        // 7. Cognito 로그아웃 페이지로 이동
+        window.location.href = cognitoLogoutUrl;
 
-        // iframe 제거를 위한 타임아웃
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-        }, 3000);
 
-        // 3. 로그아웃 완료 팝업 표시
-        window.showLogoutSuccessModal = true;
-
-        // 4. 팝업창을 닫은 후 메인 페이지로 이동
-        router.push('/');
-
-        // // 7. AWS Cognito 세션 완전 종료를 위한 강제 로그아웃
-        // const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=https://talkingpotato.shop`;
-
-        // // 8. AWS Cognito 로그아웃 페이지로 이동하여 세션 완전 종료
-        // window.location.href = cognitoLogoutUrl;
 
       } catch (e) {
         console.error('로그아웃 중 오류:', e);
