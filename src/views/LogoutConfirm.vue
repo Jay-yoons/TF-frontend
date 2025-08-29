@@ -18,27 +18,30 @@ import { useUserStore } from '@/stores/userStore'
 export default {
   name: 'LogoutConfirm',
   mounted() {
-    // 1) 로컬 인증 상태/토큰 정리
-    try {
-      const user = useUserStore()
-      user?.clear?.()
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('id_token')
-      sessionStorage.clear()
-    } catch (e) {
-      // ESLint no-empty 대응: 최소 구문
-      void 0
-    }
-
-    // 2) userStore의 설정을 사용하여 Cognito 로그아웃 호출
+    console.log('🔍 [DEBUG] LogoutConfirm.vue mounted 시작');
+    
+    // 1) userStore의 logout 함수를 사용하여 일관성 유지
     const userStore = useUserStore()
     if (userStore) {
-      // userStore의 logout 함수를 사용하여 일관성 유지
+      console.log('🔍 [DEBUG] userStore.logout() 호출 시작');
+      // userStore의 logout 함수를 사용하여 /logout 경로 문제 해결
       userStore.logout()
+      console.log('🔍 [DEBUG] userStore.logout() 호출 완료');
+      
+      // 2초 후 자동으로 홈페이지로 리다이렉트
+      setTimeout(() => {
+        console.log('🔍 [DEBUG] 자동 홈페이지 리다이렉트 실행');
+        this.goHome()
+      }, 2000)
+    } else {
+      console.error('❌ [ERROR] userStore를 찾을 수 없음');
     }
+    
+    console.log('🔍 [DEBUG] LogoutConfirm.vue mounted 완료');
   },
   methods: {
     goHome() {
+      console.log('🔍 [DEBUG] goHome() 호출 - 홈으로 이동');
       this.$router.replace({ name: 'HomePage' })
     }
   }
