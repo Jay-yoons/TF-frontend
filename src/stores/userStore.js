@@ -199,7 +199,7 @@ export const useUserStore = defineStore('user', {
         
         this.loading = false;
         
-        // 7. AWS Cognito 로그아웃 제거 - 오류 페이지 방지
+        // 7. AWS Cognito 관련 코드 완전 제거
         // 로컬 상태만 초기화하고 홈페이지로 리다이렉트
         
         // 8. 바로 홈페이지로 리다이렉트
