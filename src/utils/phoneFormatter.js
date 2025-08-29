@@ -112,7 +112,7 @@ export function displayPhoneNumber(phoneNumber) {
     } else if (cleaned.startsWith('2')) {
       return `02-${cleaned.substring(1, 5)}-${cleaned.substring(5)}`;
     } else {
-      return `0${cleaned.substring(0, 2)}-${cleaned.substring(2, 6)}-${cleaned.substring(6)}`;
+      return `${cleaned.substring(0, 2)}-${cleaned.substring(2, 6)}-${cleaned.substring(6)}`;
     }
   }
   
