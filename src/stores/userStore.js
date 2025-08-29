@@ -158,16 +158,7 @@ export const useUserStore = defineStore('user', {
       sessionStorage.setItem('logoutInProgress', 'true');
 
       try {
-        // 1. 백엔드 로그아웃 API 호출
-        // if (this.accessToken) {
-        //   await axios.post('/api/users/logout', null, {
-        //     headers: {
-        //       Authorization: `Bearer ${this.accessToken}`
-        //     }
-        //   });
-        // }
-
-        // 2. 모든 로컬 상태 초기화
+        // 모든 로컬 상태 초기화
         this.user = null;
         this.isAuthenticated = false;
         this.favorites = [];
@@ -181,18 +172,18 @@ export const useUserStore = defineStore('user', {
         localStorage.removeItem('refreshToken');
         sessionStorage.clear();
 
-        // 3. 브라우저 캐시 완전 삭제
+        // 브라우저 캐시 완전 삭제
         if ('caches' in window) {
           const cacheNames = await caches.keys();
           await Promise.all(cacheNames.map(name => caches.delete(name)));
         }
 
-        // 4. 모든 쿠키 강제 삭제 (더 강력한 방법)
+        // 모든 쿠키 강제 삭제 (더 강력한 방법)
         document.cookie.split(";").forEach(function (c) {
           document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
         });
 
-        // 5. Cognito 관련 쿠키 특별 삭제
+        // Cognito 관련 쿠키 특별 삭제
         const cognitoCookies = [
           'accessToken', 'idToken', 'refreshToken', 'CognitoIdentityServiceProvider',
           'XSRF-TOKEN', 'AWSELB', 'AWSELBCORS', 'amplify-authenticator-authToken'
@@ -204,11 +195,10 @@ export const useUserStore = defineStore('user', {
           document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.talkingpotato.shop;`;
         });
 
-        // 6. 로컬 스토리지 완전 삭제
+        // 로컬 스토리지 완전 삭제
         localStorage.clear();
 
         this.loading = false;
-
 
         // 2. Cognito 세션 완전 종료를 위한 강제 로그아웃
         const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=https://talkingpotato.shop`;
@@ -232,8 +222,6 @@ export const useUserStore = defineStore('user', {
         
         // 7. Cognito 로그아웃 페이지로 이동
         window.location.href = cognitoLogoutUrl;
-
-
 
       } catch (e) {
         console.error('로그아웃 중 오류:', e);
