@@ -6,6 +6,9 @@
     <div v-else-if="!hasBooking" class="error-message">
       리뷰를 작성하려면 해당 가게에서 예약을 완료해야 합니다.
     </div>
+    <div v-else-if="hasReview" class="error-message">
+      이미 해당 가게에 리뷰를 작성하셨습니다.
+    </div>
     <div v-else>
       <h1>리뷰 작성</h1>
       <div class="review-form">
@@ -40,6 +43,7 @@ export default {
     const score = ref(0);
     const comment = ref('');
     const hasBooking = ref(false);
+    const hasReview = ref(false);
     const loading = ref(true);
 
     const submitReview = async () => {
