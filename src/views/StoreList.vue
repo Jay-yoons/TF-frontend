@@ -2,7 +2,7 @@
   <div class="container">
     <!-- 뒤로가기 버튼 -->
     <button @click="goBack" class="back-button">
-      ← 뒤로가기
+      ← 홈으로 가기
     </button>
 
     <div v-if="loading" class="status-message">
@@ -640,11 +640,7 @@ const toggleMobileOverlay = () => {
 
 // 뒤로가기 함수
 const goBack = () => {
-  if (window.history.length > 1) {
-    router.go(-1);
-  } else {
     router.push('/');
-  }
 };
 
 // 검색 처리 함수
