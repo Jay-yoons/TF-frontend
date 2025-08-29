@@ -146,12 +146,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useUserStore } from '@/stores/userStore';
 import axios from '@/api/axios';
 
 const router = useRouter();
 const route = useRoute();
-const userStore = useUserStore();
 
 // 반응형 데이터
 const popularStores = ref([]);
