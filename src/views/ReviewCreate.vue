@@ -6,6 +6,9 @@
     <div v-else-if="!hasBooking" class="error-message">
       리뷰를 작성하려면 해당 가게에서 예약을 완료해야 합니다.
     </div>
+    <div v-else-if="hasReview" class="error-message">
+      이미 해당 가게에 리뷰를 작성하셨습니다.
+    </div>
     <div v-else>
       <h1>리뷰 작성</h1>
       <div class="review-form">
@@ -40,6 +43,7 @@ export default {
     const score = ref(0);
     const comment = ref('');
     const hasBooking = ref(false);
+    const hasReview = ref(false);
     const loading = ref(true);
 
     const submitReview = async () => {
@@ -86,33 +90,67 @@ export default {
         return;
       }
       
-      // try {
-      //   const storeId = route.params.storeId;
+      try {
+        const storeId = route.params.storeId;
         
-      //   // 사용자의 예약 목록에서 해당 가게의 예약이 있는지 확인
-      //   const response = await axios.get(`/api/bookings/users/current`, {
-      //     headers: { Authorization: `Bearer ${idToken}` }
-      //   });
+        // 사용자의 예약 목록에서 해당 가게의 예약이 있는지 확인
+        const response = await axios.get(`/api/bookings/users/current`, {
+          headers: { Authorization: `Bearer ${idToken}` }
+        });
         
-      //   // 해당 가게의 예약이 있는지 확인 (완료된 예약 포함)
-      //   const userBookings = response.data;
-      //   hasBooking.value = userBookings.some(booking => 
-      //     booking.storeId === storeId && 
-      //     (booking.bookingStateCode === 2) // CONFIRMED 또는 COMPLETED
-      //   );
+        // 해당 가게의 예약이 있는지 확인 (완료된 예약 포함)
+        const userBookings = response.data;
+        hasBooking.value = userBookings.some(booking => 
+          booking.storeId === storeId && 
+          (booking.bookingStateCode === 1 || booking.bookingStateCode === 2) // CONFIRMED 또는 COMPLETED
+        );
         
-      //   if (!hasBooking.value) {
-      //     alert('리뷰를 작성하려면 해당 가게에서 예약을 완료해야 합니다.');
-      //     router.push({ name: 'StoreDetail', params: { storeId: storeId } });
-      //     return;
-      //   }
-        hasBooking.value=true;
+        if (!hasBooking.value) {
+          alert('리뷰를 작성하려면 해당 가게에서 예약을 완료해야 합니다.');
+          router.push({ name: 'StoreDetail', params: { storeId: storeId } });
+          return;
+        }
+        
+        // 리뷰 작성 여부도 확인
+        await checkReviewStatus(storeId);
+        
+      } catch (e) {
+        console.error("예약 상태 확인 실패:", e);
+        alert('예약 정보를 확인할 수 없습니다.');
+        router.push({ name: 'StoreDetail', params: { storeId: route.params.storeId } });
+      } finally {
         loading.value = false;
-      // } catch (e) {
-      //   console.error("예약 상태 확인 실패:", e);
-      //   alert('예약 정보를 확인할 수 없습니다.');
-      //   router.push({ name: 'StoreDetail', params: { storeId: route.params.storeId } });
-      // }
+      }
+    };
+
+    // 리뷰 작성 여부 확인 함수
+    const checkReviewStatus = async (storeId) => {
+      const idToken = localStorage.getItem('idToken');
+      if (!idToken) {
+        hasReview.value = false;
+        return;
+      }
+      
+      try {
+        const response = await axios.get(`/api/reviews/my/stores/${storeId}`, {
+          headers: { Authorization: `Bearer ${idToken}` }
+        });
+        
+        // 리뷰가 있으면 true, 없으면 false
+        hasReview.value = response.data.length > 0;
+        
+        console.log('리뷰 작성 상태 확인:', hasReview.value);
+        
+        // 이미 리뷰를 작성했다면 알림 후 이전 페이지로 이동
+        if (hasReview.value) {
+          alert('이미 해당 가게에 리뷰를 작성하셨습니다.');
+          router.push({ name: 'StoreDetail', params: { storeId: storeId } });
+        }
+        
+      } catch (error) {
+        console.error('리뷰 상태 확인 실패:', error);
+        hasReview.value = false;
+      }
     };
 
     // 페이지 로드 시 예약 여부 확인
