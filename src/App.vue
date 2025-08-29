@@ -28,15 +28,10 @@
     <main class="main-content-container">
       <router-view></router-view>
     </main>
-    
+
     <!-- 메시지 모달 -->
-    <MessageModal
-      :is-visible="showModal"
-      :title="modalTitle"
-      :message="modalMessage"
-      :button-text="modalButtonText"
-      @close="closeModal"
-    />
+    <MessageModal :is-visible="showModal" :title="modalTitle" :message="modalMessage" :button-text="modalButtonText"
+      @close="closeModal" />
   </div>
 </template>
 
@@ -53,7 +48,7 @@ export default {
   },
   setup() {
     const userStore = useUserStore();
-    
+
     // 모달 상태 관리
     const showModal = ref(false);
     const modalTitle = ref('');
@@ -82,7 +77,7 @@ export default {
         );
         window.showLoginSuccessModal = false;
       }
-      
+
       // 로그인 오류 모달
       if (window.showLoginErrorModal) {
         showMessageModal(
@@ -92,6 +87,15 @@ export default {
         );
         window.showLoginErrorModal = false;
         window.loginErrorMessage = '';
+      }
+
+      if (window.showLogoutSuccessModal) {
+        showMessageModal(
+          '로그아웃 완료',
+          '성공적으로 로그아웃되었습니다.',
+          '확인'
+        );
+        window.showLogoutSuccessModal = false;
       }
     };
 
