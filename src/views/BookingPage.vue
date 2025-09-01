@@ -67,19 +67,13 @@ export default {
 
     const today = computed(() => {
       const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      return now.toISOString().split('T')[0];
     });
 
     const maxDate = computed(() => {
       const now = new Date();
       now.setDate(now.getDate() + 7);
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      return now.toISOString().split('T')[0];
     });
 
     const timeOptions = computed(() => {
@@ -87,32 +81,30 @@ export default {
       const openTime = store.value.openTime.split(':');
       const closeTime = store.value.closeTime.split(':');
       const options = [];
+
       let currentHour = parseInt(openTime[0], 10);
       let closeHour = parseInt(closeTime[0], 10);
       let closeMinute = parseInt(closeTime[1], 10);
 
       const now = new Date();
       const currentHours = now.getHours();
-      const currentDate = now.toISOString().slice(0, 10);
+      const currentDate = now.toISOString().split('T')[0];
 
-      if (closeHour === 0 && closeMinute === 0) {
-        closeHour = 24;
-      }
+      if (closeHour === 0 && closeMinute === 0) closeHour = 24;
 
       while (currentHour < closeHour) {
         const hour = String(currentHour).padStart(2, '0');
         const optionTime = `${hour}:00`;
 
         if (reservationDate.value === currentDate) {
-          const optionHours = parseInt(hour, 10);
-          if (optionHours > currentHours) {
-            options.push(optionTime);
-          }
+          if (currentHour > currentHours) options.push(optionTime);
         } else {
           options.push(optionTime);
         }
+
         currentHour += 2;
       }
+
       return options;
     });
 
@@ -134,20 +126,23 @@ export default {
 
     const updateAvailableSeats = async () => {
       if (!reservationDate.value || !reservationTime.value) {
-        availableSeats.value = store.value.seatNum;
+        availableSeats.value = store.value?.seatNum ?? 0;
         return;
       }
 
       loading.value = true;
       error.value = null;
+
       try {
         const dateTime = `${reservationDate.value}T${reservationTime.value}`;
         const response = await axios.get(`/api/bookings/seats/${storeId.value}`, {
           params: { dateTime },
           headers: { Authorization: undefined }
         });
+
         const bookedSeats = response.data;
         availableSeats.value = store.value.seatNum - bookedSeats;
+
         if (count.value > availableSeats.value) {
           count.value = availableSeats.value;
         }
@@ -176,15 +171,22 @@ export default {
       eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
         alert(data.message);
+
+        if (eventSource) eventSource.close();
+        loading.value = false;
+
         if (data.status === 'success' && data.bookingId) {
           router.push({ name: 'BookingDetail', params: { bookingNum: data.bookingId } });
+        } else if (data.status === 'failure') {
+          error.value = data.message;
         }
       };
 
       eventSource.onerror = (e) => {
         console.error('SSE 연결 실패:', e);
-        error.value = 'SSE 연결 실패';
-        eventSource.close();
+        loading.value = false;
+        error.value = '예약 SSE 연결 실패';
+        if (eventSource) eventSource.close();
       };
 
       window.addEventListener('beforeunload', () => {
@@ -193,47 +195,45 @@ export default {
     };
 
     const createBooking = async () => {
-      loading.value = true;
       error.value = null;
 
+      const userId = getCurrentUserId();
+      const accessToken = localStorage.getItem('accessToken');
+
+      if (!userId || !accessToken) {
+        alert('예약을 위해 로그인이 필요합니다.');
+        return;
+      }
+
+      if (!reservationDate.value || !reservationTime.value) {
+        alert('예약 날짜와 시간을 모두 선택해주세요.');
+        return;
+      }
+
+      if (count.value < 1 || count.value > availableSeats.value) {
+        alert(`예약 가능한 좌석 수는 ${availableSeats.value}석 입니다.`);
+        return;
+      }
+
+      loading.value = true; // 예약 요청 시작 → 로딩 ON
+
+      const bookingDate = `${reservationDate.value}T${reservationTime.value}:00`;
+      const bookingRequest = {
+        storeId: storeId.value,
+        userId: userId,
+        count: count.value,
+        bookingDate: bookingDate,
+        seats: store.value.seatNum,
+      };
+
       try {
-        const userId = getCurrentUserId();
-        const accessToken = localStorage.getItem('accessToken');
-
-        if (!userId || !accessToken) {
-          alert('예약을 위해 로그인이 필요합니다.');
-          loading.value = false;
-          return;
-        }
-
-        if (!reservationDate.value || !reservationTime.value) {
-          alert('예약 날짜와 시간을 모두 선택해주세요.');
-          loading.value = false;
-          return;
-        }
-
-        if (count.value < 1 || count.value > availableSeats.value) {
-          alert(`예약 가능한 좌석 수는 ${availableSeats.value}석 입니다.`);
-          loading.value = false;
-          return;
-        }
-
-        const bookingDate = `${reservationDate.value}T${reservationTime.value}:00`;
-        const bookingRequest = {
-          storeId: storeId.value,
-          userId: userId,
-          count: count.value,
-          bookingDate: bookingDate,
-          seats: store.value.seatNum,
-        };
-
         const headers = { Authorization: `Bearer ${accessToken}` };
-        const response = await axios.post('/api/bookings/new', bookingRequest, { headers });
-        alert(response.data);
+        await axios.post('/api/bookings/new', bookingRequest, { headers });
+
+        // 요청은 성공 → SSE 응답 기다림
       } catch (e) {
         console.error('예약 요청 실패:', e);
-        error.value = `작업 실패: ${e.response?.data?.message || e.message}`;
-      } finally {
+        error.value = `예약 요청 실패: ${e.response?.data?.message || e.message}`;
         loading.value = false;
       }
     };
@@ -265,7 +265,6 @@ export default {
   },
 };
 </script>
-
 
 <style scoped>
 .container {
