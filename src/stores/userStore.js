@@ -203,8 +203,8 @@ export const useUserStore = defineStore('user', {
         // 2. Cognito 세션 완전 종료를 위한 강제 로그아웃
         const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=https://talkingpotato.shop`;
         
-        // 3. 로그아웃 성공 토스트 표시
-        window.showLogoutSuccessToast = true;
+        // 3. 로그아웃 성공 모달 표시
+        window.showLogoutSuccessModal = true;
         
         // 4. 로그아웃 진행 상태 표시
         console.log('Cognito 로그아웃 페이지로 이동 중...');

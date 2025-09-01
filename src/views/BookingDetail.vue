@@ -92,9 +92,7 @@ const fetchStoreName = async (storeId) => {
 const cancelBooking = async () => {
   const accessToken = localStorage.getItem('accessToken');
   if (!accessToken) {
-    // 토스트로 오류 메시지 표시
-    window.showErrorToast = true;
-    window.errorMessage = '예약을 취소하려면 로그인이 필요합니다.';
+    alert('예약을 취소하려면 로그인이 필요합니다.');
     return;
   }
   const headers = { Authorization: `Bearer ${accessToken}` };
@@ -107,16 +105,12 @@ const cancelBooking = async () => {
     );
     console.log('예약 취소 성공:', cancelBookingResponse.data);
 
-    // 토스트로 성공 메시지 표시
-    window.showSuccessToast = true;
-    window.successMessage = '예약이 성공적으로 취소되었습니다';
+    alert('예약이 성공적으로 취소되었습니다');
 
     fetchBookingDetail(booking.value.bookingNum);
   } catch (error) {
     console.error('예약 취소 작업 실패:', error);
-    // 토스트로 오류 메시지 표시
-    window.showErrorToast = true;
-    window.errorMessage = `예약 취소에 실패했습니다: ${error.message}`;
+    alert(`예약 취소에 실패했습니다: ${error.message}`);
   }
 };
 

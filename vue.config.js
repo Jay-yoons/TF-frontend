@@ -2,6 +2,8 @@ const { defineConfig } = require('@vue/cli-service');
 
 module.exports = defineConfig({
   publicPath: '/',
+  // 캐시 무효화를 위한 설정
+  filenameHashing: true,
   // SPA 라우팅을 위한 fallback 설정
   configureWebpack: {
     devServer: {

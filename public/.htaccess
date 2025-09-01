@@ -6,3 +6,20 @@
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]
 </IfModule>
+
+# 캐시 무효화 설정
+<IfModule mod_headers.c>
+  # JavaScript 파일 캐시 무효화
+  <FilesMatch "\.(js)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+  </FilesMatch>
+  
+  # CSS 파일 캐시 무효화
+  <FilesMatch "\.(css)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+  </FilesMatch>
+</IfModule>

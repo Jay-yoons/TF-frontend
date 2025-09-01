@@ -33,34 +33,23 @@
     <MessageModal :is-visible="showModal" :title="modalTitle" :message="modalMessage" :button-text="modalButtonText"
       @close="closeModal" />
     
-    <!-- 토스트 알림 -->
-    <Toast 
-      :show="toast.show" 
-      :message="toast.message" 
-      :type="toast.type" 
-      :duration="toast.duration"
-      @hide="hideToast" 
-    />
+
   </div>
 </template>
 
 <script>
 import { ref } from 'vue';
 import { useUserStore } from '@/stores/userStore';
-import { useToast } from '@/composables/useToast';
 import axios from '@/api/axios';
 import MessageModal from '@/components/MessageModal.vue';
-import Toast from '@/components/Toast.vue';
 
 export default {
   name: 'App',
   components: {
-    MessageModal,
-    Toast
+    MessageModal
   },
   setup() {
     const userStore = useUserStore();
-    const { toast, showSuccess, showError, showInfo, hideToast } = useToast();
 
     // 모달 상태 관리
     const showModal = ref(false);
@@ -70,48 +59,41 @@ export default {
 
 
 
+    const showMessageModal = (title, message, buttonText = '확인') => {
+      modalTitle.value = title;
+      modalMessage.value = message;
+      modalButtonText.value = buttonText;
+      showModal.value = true;
+    };
+
     const closeModal = () => {
       showModal.value = false;
     };
 
-    // 전역 토스트 이벤트 리스너
-    const handleGlobalToastEvents = () => {
-      // 로그인 성공 토스트
-      if (window.showLoginSuccessToast) {
-        showSuccess('로그인이 성공적으로 완료되었습니다!');
-        window.showLoginSuccessToast = false;
+    // 전역 모달 이벤트 리스너
+    const handleGlobalModalEvents = () => {
+      // 로그인 성공 모달
+      if (window.showLoginSuccessModal) {
+        showMessageModal('로그인 성공', '로그인이 성공적으로 완료되었습니다!');
+        window.showLoginSuccessModal = false;
       }
 
-      // 로그인 오류 토스트
-      if (window.showLoginErrorToast) {
-        showError(window.loginErrorMessage || '로그인 중 오류가 발생했습니다.');
-        window.showLoginErrorToast = false;
+      // 로그인 오류 모달
+      if (window.showLoginErrorModal) {
+        showMessageModal('로그인 실패', window.loginErrorMessage || '로그인 중 오류가 발생했습니다.');
+        window.showLoginErrorModal = false;
         window.loginErrorMessage = '';
       }
 
-      // 로그아웃 성공 토스트
-      if (window.showLogoutSuccessToast) {
-        showInfo('성공적으로 로그아웃되었습니다.');
-        window.showLogoutSuccessToast = false;
-      }
-
-      // 일반 성공 토스트
-      if (window.showSuccessToast) {
-        showSuccess(window.successMessage || '성공적으로 처리되었습니다.');
-        window.showSuccessToast = false;
-        window.successMessage = '';
-      }
-
-      // 일반 오류 토스트
-      if (window.showErrorToast) {
-        showError(window.errorMessage || '오류가 발생했습니다.');
-        window.showErrorToast = false;
-        window.errorMessage = '';
+      // 로그아웃 성공 모달
+      if (window.showLogoutSuccessModal) {
+        showMessageModal('로그아웃 완료', '성공적으로 로그아웃되었습니다.');
+        window.showLogoutSuccessModal = false;
       }
     };
 
-    // 주기적으로 전역 토스트 이벤트 확인
-    setInterval(handleGlobalToastEvents, 100);
+    // 주기적으로 전역 모달 이벤트 확인
+    setInterval(handleGlobalModalEvents, 100);
 
     const login = async () => {
       try {
@@ -120,27 +102,24 @@ export default {
         window.location.href = loginUrl;
       } catch (err) {
         console.error('로그인 URL을 불러오는 데 실패했습니다.', err);
-        showError('로그인 페이지로 이동할 수 없습니다. 다시 시도해주세요.');
+        alert('로그인 페이지로 이동할 수 없습니다. 다시 시도해주세요.');
       }
     };
 
     const logout = () => {
       userStore.logout();
-      showInfo('로그아웃되었습니다.');
     };
 
-    return {
-      userStore,
-      login,
-      logout,
-      showModal,
-      modalTitle,
-      modalMessage,
-      modalButtonText,
-      closeModal,
-      toast,
-      hideToast
-    };
+          return {
+        userStore,
+        login,
+        logout,
+        showModal,
+        modalTitle,
+        modalMessage,
+        modalButtonText,
+        closeModal
+      };
   },
 };
 </script>

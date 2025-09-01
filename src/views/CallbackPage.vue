@@ -36,8 +36,8 @@ export default {
             // AWS Cognito 오류 처리
             if (error) {
                 console.error('AWS Cognito 오류:', error, errorDescription);
-                // 토스트로 오류 메시지 표시
-                window.showLoginErrorToast = true;
+                // 모달로 오류 메시지 표시
+                window.showLoginErrorModal = true;
                 window.loginErrorMessage = `로그인 실패: ${errorDescription || error}`;
                 router.push('/');
                 return;
@@ -51,8 +51,8 @@ export default {
                 
                 // 더 명확한 오류 메시지
                 const message = '로그인 플로우가 올바르지 않습니다. 메인 페이지에서 로그인 버튼을 클릭해주세요.';
-                // 토스트로 오류 메시지 표시
-                window.showLoginErrorToast = true;
+                // 모달로 오류 메시지 표시
+                window.showLoginErrorModal = true;
                 window.loginErrorMessage = message;
                 router.push('/');
                 return;
@@ -111,16 +111,16 @@ export default {
                 await userStore.handleCognitoCallback(code, state);
 
                 if (userStore.isAuthenticated) {
-                    // 토스트로 성공 메시지 표시
-                    window.showLoginSuccessToast = true;
+                    // 모달로 성공 메시지 표시
+                    window.showLoginSuccessModal = true;
                     router.push('/');
                 } else {
                     throw new Error('로그인에 실패했습니다.');
                 }
             } catch (error) {
                 console.error('로그인 콜백 처리 실패:', error);
-                // 토스트로 오류 메시지 표시
-                window.showLoginErrorToast = true;
+                // 모달로 오류 메시지 표시
+                window.showLoginErrorModal = true;
                 window.loginErrorMessage = `로그인 실패: ${error.message}`;
                 router.push('/');
             }
