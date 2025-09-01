@@ -216,6 +216,9 @@ export default {
 
           eventSource.onopen = async () => {
             console.log('SSE 연결 성공');
+            // SSE 연결 후, 잠시 대기하여 SseEmitter가 등록될 시간을 줍니다.
+            await new Promise(r => setTimeout(r, 500)); 
+            
             try {
               const bookingResponse = await axios.post('/api/bookings/new', bookingRequest, { headers });
               console.log('예약 요청 전송:', bookingResponse.data);
