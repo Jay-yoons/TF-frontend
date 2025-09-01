@@ -88,6 +88,18 @@ const fetchStoreName = async (storeId) => {
   }
 };
 
+// 예약 상태에 따른 CSS 클래스 반환
+const getStatusClass = (status) => {
+  const classMap = {
+    'CONFIRMED': 'status-confirmed',
+    'CANCELED': 'status-canceled',
+    'COMPLETED': 'status-completed',
+    'WAITING': 'status-waiting',
+    'FAILED': 'status-failed'
+  };
+  return classMap[status] || 'status-default';
+};
+
 // 예약 취소 함수
 const cancelBooking = async () => {
   const accessToken = localStorage.getItem('accessToken');
