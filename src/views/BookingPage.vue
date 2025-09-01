@@ -63,6 +63,7 @@ export default {
     const reservationDate = ref('');
     const reservationTime = ref('');
     const availableSeats = ref(null);
+    let eventSource = null;
 
     const today = computed(() => {
       const now = new Date();
@@ -168,6 +169,34 @@ export default {
       }
     };
 
+    const setupSse = (userId) => {
+      if (eventSource) {
+        eventSource.close();
+      }
+
+      eventSource = new EventSource(`${axios.defaults.baseURL}/api/sse/booking-status/${userId}`);
+
+      eventSource.addEventListener('message', (event) => {
+        const data = JSON.parse(event.data);
+        alert(data.message);
+        if (data.status === 'success' && data.bookingId) {
+          router.push({ name: 'BookingDetail', params: { bookingNum: data.bookingId } });
+        }
+      });
+
+      eventSource.addEventListener('error', (e) => {
+        console.error('SSE connection failed:', e);
+        eventSource.close();
+      });
+
+      // Cleanup on component unmount
+      window.addEventListener('beforeunload', () => {
+        if (eventSource) {
+          eventSource.close();
+        }
+      });
+    };
+
     const createBooking = async () => {
       loading.value = true;
       error.value = null;
@@ -208,21 +237,20 @@ export default {
           seats: store.value.seatNum,
         };
 
+        // SSE 연결을 먼저 설정
+        setupSse(userId);
+
         const bookingResponse = await axios.post('/api/bookings/new', bookingRequest, { headers });
-        console.log('예약 성공:', bookingResponse.data);
+        console.log('예약 요청 전송:', bookingResponse.data);
+        alert(bookingResponse.data); // "예약 처리중입니다." 메시지 표시
 
-        const bookingNum = bookingResponse.data.bookingNum;
-
-        if (bookingNum) {
-          router.push({ name: 'BookingDetail', params: { bookingNum } });
-        } else {
-          throw new Error('API 응답에 예약 번호가 없습니다.');
-        }
       } catch (e) {
-        console.error('예약 실패:', e);
+        console.error('예약 요청 실패:', e);
         error.value = `작업 실패: ${e.response?.data?.message || e.message}`;
-      } finally {
         loading.value = false;
+        if (eventSource) {
+          eventSource.close();
+        }
       }
     };
 
