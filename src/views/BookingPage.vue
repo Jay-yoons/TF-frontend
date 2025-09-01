@@ -95,7 +95,6 @@ export default {
       const currentHours = now.getHours();
       const currentDate = now.toISOString().slice(0, 10);
 
-      // 종료 시간이 00:00일 경우 24:00으로 처리
       if (closeHour === 0 && closeMinute === 0) {
         closeHour = 24;
       }
@@ -104,15 +103,12 @@ export default {
         const hour = String(currentHour).padStart(2, '0');
         const optionTime = `${hour}:00`;
 
-        // 오늘 날짜인 경우, 현재 시간 이후의 시간만 추가
         if (reservationDate.value === currentDate) {
           const optionHours = parseInt(hour, 10);
-
           if (optionHours > currentHours) {
             options.push(optionTime);
           }
         } else {
-          // 오늘이 아닌 경우 모든 시간 추가
           options.push(optionTime);
         }
         currentHour += 2;
@@ -128,7 +124,6 @@ export default {
       try {
         const response = await axios.get(`/api/stores/${storeId.value}`);
         store.value = response.data;
-        // 초기 잔여 좌석을 가게의 총 좌석 수로 설정
         availableSeats.value = store.value.seatNum;
       } catch (e) {
         error.value = `가게 정보를 불러오는 데 실패했습니다: ${e.message}`;
@@ -137,7 +132,6 @@ export default {
       }
     };
 
-    // 선택된 날짜와 시간에 따라 잔여 좌석 수를 가져오는 함수
     const updateAvailableSeats = async () => {
       if (!reservationDate.value || !reservationTime.value) {
         availableSeats.value = store.value.seatNum;
@@ -148,12 +142,9 @@ export default {
       error.value = null;
       try {
         const dateTime = `${reservationDate.value}T${reservationTime.value}`;
-
         const response = await axios.get(`/api/bookings/seats/${storeId.value}`, {
           params: { dateTime },
-          headers: {
-            Authorization: undefined
-          }
+          headers: { Authorization: undefined }
         });
         const bookedSeats = response.data;
         availableSeats.value = store.value.seatNum - bookedSeats;
@@ -167,39 +158,6 @@ export default {
       } finally {
         loading.value = false;
       }
-    };
-
-    const setupSse = (userId) => {
-      if (eventSource) {
-        eventSource.close();
-      }
-
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        console.error('인증 토큰이 없습니다.');
-        return;
-      }
-
-      eventSource = new EventSource(`${axios.defaults.baseURL}/api/bookings/booking-status/${userId}?token=${accessToken}`);
-
-      eventSource.addEventListener('message', (event) => {
-        const data = JSON.parse(event.data);
-        alert(data.message);
-        if (data.status === 'success' && data.bookingId) {
-          router.push({ name: 'BookingDetail', params: { bookingNum: data.bookingId } });
-        }
-      });
-
-      eventSource.addEventListener('error', (e) => {
-        console.error('SSE connection failed:', e);
-        eventSource.close();
-      });
-
-      window.addEventListener('beforeunload', () => {
-        if (eventSource) {
-          eventSource.close();
-        }
-      });
     };
 
     const createBooking = async () => {
@@ -228,12 +186,8 @@ export default {
           return;
         }
 
-        const headers = {
-          Authorization: `Bearer ${accessToken}`,
-        };
-
+        const headers = { Authorization: `Bearer ${accessToken}` };
         const bookingDate = `${reservationDate.value}T${reservationTime.value}:00`;
-
         const bookingRequest = {
           storeId: storeId.value,
           userId: userId,
@@ -242,9 +196,23 @@ export default {
           seats: store.value.seatNum,
         };
 
-        // SSE 연결이 완료된 후에만 API 요청을 보내도록 Promise를 사용
         await new Promise((resolve, reject) => {
-          setupSse(userId);
+          if (eventSource) {
+            eventSource.close();
+          }
+
+          eventSource = new EventSource(`${axios.defaults.baseURL}/api/bookings/booking-status/${userId}?token=${accessToken}`);
+
+          eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            alert(data.message);
+            if (data.status === 'success' && data.bookingId) {
+              router.push({ name: 'BookingDetail', params: { bookingNum: data.bookingId } });
+              resolve();
+            } else {
+              reject(new Error(data.message));
+            }
+          };
 
           eventSource.onopen = async () => {
             console.log('SSE 연결 성공');
@@ -252,7 +220,6 @@ export default {
               const bookingResponse = await axios.post('/api/bookings/new', bookingRequest, { headers });
               console.log('예약 요청 전송:', bookingResponse.data);
               alert(bookingResponse.data);
-              resolve(bookingResponse);
             } catch (e) {
               reject(e);
             }
@@ -263,17 +230,21 @@ export default {
             eventSource.close();
             reject(new Error('SSE 연결에 실패했습니다.'));
           };
+          
+          window.addEventListener('beforeunload', () => {
+            if (eventSource) {
+              eventSource.close();
+            }
+          });
         });
 
       } catch (e) {
         console.error('예약 요청 실패:', e);
         error.value = `작업 실패: ${e.response?.data?.message || e.message}`;
-        loading.value = false;
         if (eventSource) {
           eventSource.close();
         }
       } finally {
-        // 예약 처리 완료 후 로딩 상태를 해제합니다.
         loading.value = false;
       }
     };
