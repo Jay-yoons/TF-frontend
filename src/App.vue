@@ -45,7 +45,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useUserStore } from '@/stores/userStore';
 import { useToast } from '@/composables/useToast';
 import axios from '@/api/axios';
@@ -68,12 +68,7 @@ export default {
     const modalMessage = ref('');
     const modalButtonText = ref('확인');
 
-    const showMessageModal = (title, message, buttonText = '확인') => {
-      modalTitle.value = title;
-      modalMessage.value = message;
-      modalButtonText.value = buttonText;
-      showModal.value = true;
-    };
+
 
     const closeModal = () => {
       showModal.value = false;

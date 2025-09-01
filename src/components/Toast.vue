@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/multi-word-component-names -->
 <template>
   <Transition name="toast">
     <div v-if="show" :class="['toast', type]" @click="hide">
@@ -18,7 +19,9 @@
 <script setup>
 import { defineProps, defineEmits } from 'vue';
 
-const props = defineProps({
+// eslint-disable-next-line vue/multi-word-component-names
+
+defineProps({
   show: {
     type: Boolean,
     default: false
@@ -43,6 +46,8 @@ const emit = defineEmits(['hide']);
 const hide = () => {
   emit('hide');
 };
+
+
 </script>
 
 <style scoped>
