@@ -157,6 +157,7 @@ export default {
 
     const setupSSE = () => {
       const userId = getCurrentUserIdFromSub();
+      console.log('userId for SSE:', userId);
       const accessToken = localStorage.getItem('accessToken');
       if (!userId || !accessToken) return;
 
