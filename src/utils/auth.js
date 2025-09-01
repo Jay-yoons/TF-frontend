@@ -32,3 +32,29 @@ export const getCurrentUserId = () => {
     return null;
   }
 };
+
+export const getCurrentUserIdFromSub = () => {
+  try {
+    const idToken = localStorage.getItem('idToken');
+    if (!idToken || typeof idToken !== 'string') {
+      console.error('로컬 스토리지에 유효한 idToken이 없습니다.');
+      return null;
+    }
+
+    const payloadBase64 = idToken.split('.')[1];
+    let base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+
+    const decodedPayload = atob(base64);
+    const payload = JSON.parse(decodedPayload);
+
+    // 'sub' 필드에서 사용자 ID 추출
+    return payload.sub || null;
+  } catch (error) {
+    console.error('JWT 토큰 디코딩 실패:', error);
+    return null;
+  }
+};

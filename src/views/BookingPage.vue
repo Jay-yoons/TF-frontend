@@ -48,7 +48,7 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from '@/api/axios';
-import { getCurrentUserId } from '@/utils/auth';
+import { getCurrentUserId, getCurrentUserIdFromSub } from '@/utils/auth';
 
 export default {
   name: 'BookingPage',
@@ -156,7 +156,7 @@ export default {
     };
 
     const setupSSE = () => {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserIdFromSub();
       const accessToken = localStorage.getItem('accessToken');
       if (!userId || !accessToken) return;
 
