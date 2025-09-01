@@ -174,7 +174,13 @@ export default {
         eventSource.close();
       }
 
-      eventSource = new EventSource(`${axios.defaults.baseURL}/api/bookings/booking-status/${userId}`);
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        console.error('인증 토큰이 없습니다.');
+        return;
+      }
+
+      eventSource = new EventSource(`${axios.defaults.baseURL}/api/bookings/booking-status/${userId}?token=${accessToken}`);
 
       eventSource.addEventListener('message', (event) => {
         const data = JSON.parse(event.data);
@@ -239,7 +245,7 @@ export default {
         // SSE 연결이 완료된 후에만 API 요청을 보내도록 Promise를 사용
         await new Promise((resolve, reject) => {
           setupSse(userId);
-          
+
           eventSource.onopen = async () => {
             console.log('SSE 연결 성공');
             try {
