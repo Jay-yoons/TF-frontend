@@ -174,7 +174,7 @@ export default {
         eventSource.close();
       }
 
-      eventSource = new EventSource(`${axios.defaults.baseURL}/api/sse/booking-status/${userId}`);
+      eventSource = new EventSource(`${axios.defaults.baseURL}/api/bookings/booking-status/${userId}`);
 
       eventSource.addEventListener('message', (event) => {
         const data = JSON.parse(event.data);
