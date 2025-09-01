@@ -34,7 +34,7 @@
         </div>
       </div>
 
-      <button @click="createBooking" class="booking-button" :disabled="!isBookingValid">
+      <button @click="createBooking" class="booking-button" :disabled="!isBookingValid || loading">
         예약 확정
       </button>
     </div>
@@ -90,7 +90,7 @@ export default {
       let currentHour = parseInt(openTime[0], 10);
       let closeHour = parseInt(closeTime[0], 10);
       let closeMinute = parseInt(closeTime[1], 10);
-      
+
       const now = new Date();
       const currentHours = now.getHours();
       const currentDate = now.toISOString().slice(0, 10);
@@ -99,7 +99,7 @@ export default {
       if (closeHour === 0 && closeMinute === 0) {
         closeHour = 24;
       }
-      
+
       while (currentHour < closeHour) {
         const hour = String(currentHour).padStart(2, '0');
         const optionTime = `${hour}:00`;
@@ -107,7 +107,7 @@ export default {
         // 오늘 날짜인 경우, 현재 시간 이후의 시간만 추가
         if (reservationDate.value === currentDate) {
           const optionHours = parseInt(hour, 10);
-          
+
           if (optionHours > currentHours) {
             options.push(optionTime);
           }
@@ -153,7 +153,7 @@ export default {
           params: { dateTime },
           headers: {
             Authorization: undefined
-          } // Authorization 제거됨
+          }
         });
         const bookedSeats = response.data;
         availableSeats.value = store.value.seatNum - bookedSeats;
@@ -163,7 +163,7 @@ export default {
       } catch (e) {
         console.error('잔여 좌석 조회 실패:', e);
         error.value = `잔여 좌석 정보를 불러오는 데 실패했습니다: ${e.response?.data?.message || e.message}`;
-        availableSeats.value = 0; // 오류 발생 시 좌석을 0으로 설정
+        availableSeats.value = 0;
       } finally {
         loading.value = false;
       }
@@ -189,7 +189,6 @@ export default {
         eventSource.close();
       });
 
-      // Cleanup on component unmount
       window.addEventListener('beforeunload', () => {
         if (eventSource) {
           eventSource.close();
@@ -237,12 +236,28 @@ export default {
           seats: store.value.seatNum,
         };
 
-        // SSE 연결을 먼저 설정
-        setupSse(userId);
+        // SSE 연결이 완료된 후에만 API 요청을 보내도록 Promise를 사용
+        await new Promise((resolve, reject) => {
+          setupSse(userId);
+          
+          eventSource.onopen = async () => {
+            console.log('SSE 연결 성공');
+            try {
+              const bookingResponse = await axios.post('/api/bookings/new', bookingRequest, { headers });
+              console.log('예약 요청 전송:', bookingResponse.data);
+              alert(bookingResponse.data);
+              resolve(bookingResponse);
+            } catch (e) {
+              reject(e);
+            }
+          };
 
-        const bookingResponse = await axios.post('/api/bookings/new', bookingRequest, { headers });
-        console.log('예약 요청 전송:', bookingResponse.data);
-        alert(bookingResponse.data); // "예약 처리중입니다." 메시지 표시
+          eventSource.onerror = (e) => {
+            console.error('SSE 연결 실패:', e);
+            eventSource.close();
+            reject(new Error('SSE 연결에 실패했습니다.'));
+          };
+        });
 
       } catch (e) {
         console.error('예약 요청 실패:', e);
@@ -251,6 +266,9 @@ export default {
         if (eventSource) {
           eventSource.close();
         }
+      } finally {
+        // 예약 처리 완료 후 로딩 상태를 해제합니다.
+        loading.value = false;
       }
     };
 
@@ -258,7 +276,6 @@ export default {
       fetchStoreDetail();
     });
 
-    // 선택된 날짜 또는 시간이 변경될 때 잔여 좌석 업데이트
     watch([reservationDate, reservationTime], () => {
       updateAvailableSeats();
     });
