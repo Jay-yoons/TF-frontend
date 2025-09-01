@@ -2,6 +2,12 @@ const { defineConfig } = require('@vue/cli-service');
 
 module.exports = defineConfig({
   publicPath: '/',
+  // SPA 라우팅을 위한 fallback 설정
+  configureWebpack: {
+    devServer: {
+      historyApiFallback: true
+    }
+  },
   devServer: {
     port: 3000, // 포트 설정을 프록시 설정과 함께 통합
     proxy: {
