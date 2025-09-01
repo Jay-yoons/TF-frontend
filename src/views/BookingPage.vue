@@ -160,6 +160,38 @@ export default {
       }
     };
 
+    const setupSSE = () => {
+      const userId = getCurrentUserId();
+      const accessToken = localStorage.getItem('accessToken');
+      if (!userId || !accessToken) return;
+
+      if (eventSource) eventSource.close();
+
+      eventSource = new EventSource(`${axios.defaults.baseURL}/api/bookings/booking-status/${userId}?token=${accessToken}`);
+
+      eventSource.addEventListener('connect', (e) => {
+        console.log('SSE 연결 확인:', e.data);
+      });
+
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        alert(data.message);
+        if (data.status === 'success' && data.bookingId) {
+          router.push({ name: 'BookingDetail', params: { bookingNum: data.bookingId } });
+        }
+      };
+
+      eventSource.onerror = (e) => {
+        console.error('SSE 연결 실패:', e);
+        error.value = 'SSE 연결 실패';
+        eventSource.close();
+      };
+
+      window.addEventListener('beforeunload', () => {
+        if (eventSource) eventSource.close();
+      });
+    };
+
     const createBooking = async () => {
       loading.value = true;
       error.value = null;
@@ -186,7 +218,6 @@ export default {
           return;
         }
 
-        const headers = { Authorization: `Bearer ${accessToken}` };
         const bookingDate = `${reservationDate.value}T${reservationTime.value}:00`;
         const bookingRequest = {
           storeId: storeId.value,
@@ -196,57 +227,12 @@ export default {
           seats: store.value.seatNum,
         };
 
-        await new Promise((resolve, reject) => {
-          if (eventSource) {
-            eventSource.close();
-          }
-
-          eventSource = new EventSource(`${axios.defaults.baseURL}/api/bookings/booking-status/${userId}?token=${accessToken}`);
-
-          eventSource.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            alert(data.message);
-            if (data.status === 'success' && data.bookingId) {
-              router.push({ name: 'BookingDetail', params: { bookingNum: data.bookingId } });
-              resolve();
-            } else {
-              reject(new Error(data.message));
-            }
-          };
-
-          eventSource.onopen = async () => {
-            console.log('SSE 연결 성공');
-            // SSE 연결 후, 잠시 대기하여 SseEmitter가 등록될 시간을 줍니다.
-            await new Promise(r => setTimeout(r, 500)); 
-            
-            try {
-              const bookingResponse = await axios.post('/api/bookings/new', bookingRequest, { headers });
-              console.log('예약 요청 전송:', bookingResponse.data);
-              alert(bookingResponse.data);
-            } catch (e) {
-              reject(e);
-            }
-          };
-
-          eventSource.onerror = (e) => {
-            console.error('SSE 연결 실패:', e);
-            eventSource.close();
-            reject(new Error('SSE 연결에 실패했습니다.'));
-          };
-          
-          window.addEventListener('beforeunload', () => {
-            if (eventSource) {
-              eventSource.close();
-            }
-          });
-        });
-
+        const headers = { Authorization: `Bearer ${accessToken}` };
+        const response = await axios.post('/api/bookings/new', bookingRequest, { headers });
+        alert(response.data);
       } catch (e) {
         console.error('예약 요청 실패:', e);
         error.value = `작업 실패: ${e.response?.data?.message || e.message}`;
-        if (eventSource) {
-          eventSource.close();
-        }
       } finally {
         loading.value = false;
       }
@@ -254,6 +240,7 @@ export default {
 
     onMounted(() => {
       fetchStoreDetail();
+      setupSSE();
     });
 
     watch([reservationDate, reservationTime], () => {
@@ -278,6 +265,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 .container {
