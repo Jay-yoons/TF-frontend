@@ -14,7 +14,12 @@
           </router-link>
         </div>
         <div><strong>예약 날짜:</strong> {{ formatDateTime(booking.bookingDate) }}</div>
-        <div><strong>예약 상태:</strong> {{ booking.bookingState }}</div>
+        <div>
+          <strong>예약 상태:</strong> 
+          <span :class="['status-badge', getStatusClass(booking.bookingState)]">
+            {{ booking.bookingState }}
+          </span>
+        </div>
         <div><strong>좌석 수:</strong> {{ booking.count }}</div>
       </div>
       <div v-if="booking.bookingState === 'CONFIRMED'">
@@ -28,7 +33,7 @@
           리뷰 작성
         </router-link>
       </div>
-      <p v-else>취소 또는 리뷰 작성할 수 없는 예약입니다.</p>
+      <p v-else class="status-text">취소 또는 리뷰 작성할 수 없는 예약입니다.</p>
     </div>
     <div v-else>
       <p>예약 정보를 불러오는 중입니다...</p>
@@ -87,7 +92,9 @@ const fetchStoreName = async (storeId) => {
 const cancelBooking = async () => {
   const accessToken = localStorage.getItem('accessToken');
   if (!accessToken) {
-    alert('예약을 취소하려면 로그인이 필요합니다.');
+    // 토스트로 오류 메시지 표시
+    window.showErrorToast = true;
+    window.errorMessage = '예약을 취소하려면 로그인이 필요합니다.';
     return;
   }
   const headers = { Authorization: `Bearer ${accessToken}` };
@@ -100,12 +107,16 @@ const cancelBooking = async () => {
     );
     console.log('예약 취소 성공:', cancelBookingResponse.data);
 
-    alert('예약이 성공적으로 취소되었습니다');
+    // 토스트로 성공 메시지 표시
+    window.showSuccessToast = true;
+    window.successMessage = '예약이 성공적으로 취소되었습니다';
 
     fetchBookingDetail(booking.value.bookingNum);
   } catch (error) {
     console.error('예약 취소 작업 실패:', error);
-    alert(`예약 취소에 실패했습니다: ${error.message}`);
+    // 토스트로 오류 메시지 표시
+    window.showErrorToast = true;
+    window.errorMessage = `예약 취소에 실패했습니다: ${error.message}`;
   }
 };
 
@@ -145,6 +156,7 @@ h1 {
 .detail-card div {
   display: flex;
   justify-content: space-between; /* 좌우 정렬 */
+  align-items: center;
   font-size: 16px;
   color: #555;
   border-bottom: 1px solid #eee; /* 구분선 추가 */
@@ -172,6 +184,78 @@ h1 {
   color: #e64a19; /* 호버 시 색상 변경 */
 }
 
+/* 예약 상태 배지 스타일 */
+.status-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  min-width: 70px;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.status-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.status-badge:hover::before {
+  left: 100%;
+}
+
+/* 확정 상태 - 초록색 (긍정적, 성공) */
+.status-confirmed {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  border: 2px solid #4CAF50;
+}
+
+/* 취소됨 상태 - 빨간색 (부정적, 중단) */
+.status-canceled {
+  background: linear-gradient(135deg, #f44336, #d32f2f);
+  color: white;
+  border: 2px solid #f44336;
+}
+
+/* 완료 상태 - 파란색 (중립적, 완료) */
+.status-completed {
+  background: linear-gradient(135deg, #2196F3, #1976D2);
+  color: white;
+  border: 2px solid #2196F3;
+}
+
+/* 대기중 상태 - 주황색 (주의, 진행중) */
+.status-waiting {
+  background: linear-gradient(135deg, #FF9800, #F57C00);
+  color: white;
+  border: 2px solid #FF9800;
+}
+
+/* 실패 상태 - 회색 (부정적, 실패) */
+.status-failed {
+  background: linear-gradient(135deg, #9E9E9E, #757575);
+  color: white;
+  border: 2px solid #9E9E9E;
+}
+
+/* 기본 상태 */
+.status-default {
+  background: linear-gradient(135deg, #E0E0E0, #BDBDBD);
+  color: #424242;
+  border: 2px solid #E0E0E0;
+}
+
 .action-buttons {
   margin-top: 30px;
   text-align: center;
@@ -185,29 +269,34 @@ h1 {
   font-size: 18px;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
   text-align: center;
   text-decoration: none;
   display: inline-block;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .cancel-button {
-  background-color: #ffffff; /* 흰색 배경 */
-  color: #ff5722; /* 붉은색 글씨 */
-  border: 1px solid #ff5722; /* 붉은색 테두리 */
+  background: linear-gradient(135deg, #ffffff, #f5f5f5);
+  color: #ff5722;
+  border: 2px solid #ff5722;
 }
 
 .cancel-button:hover {
-  background-color: #fff2e6; /* 호버 시 연한 주황색 배경 */
+  background: linear-gradient(135deg, #fff2e6, #ffe0b2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(255, 87, 34, 0.2);
 }
 
 .review-button {
-  background-color: #ff5722; /* 주황색 배경 */
-  color: #ffffff; /* 흰색 글씨 */
+  background: linear-gradient(135deg, #ff5722, #e64a19);
+  color: #ffffff;
 }
 
 .review-button:hover {
-  background-color: #e64a19; /* 호버 시 어두운 주황색 */
+  background: linear-gradient(135deg, #e64a19, #d84315);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(255, 87, 34, 0.3);
 }
 
 .status-text {
@@ -215,5 +304,9 @@ h1 {
   color: #777;
   margin-top: 20px;
   font-size: 14px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #6c757d;
 }
 </style>

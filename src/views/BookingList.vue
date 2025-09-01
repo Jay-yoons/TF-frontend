@@ -19,7 +19,9 @@
             </div>
             <div>
               <strong>예약 상태</strong>
-              <span>{{ booking.bookingState }}</span>
+              <span :class="['status-badge', getStatusClass(booking.bookingState)]">
+                {{ booking.bookingState }}
+              </span>
             </div>
           </div>
           <div class="card-actions">
@@ -55,6 +57,20 @@ const formatDateTime = (dateTimeStr) => {
   if (!time) return date;
   const formattedTime = time.substring(0, 5); // '13:00:00' -> '13:00'
   return `${date} ${formattedTime}`;
+};
+
+
+
+// 예약 상태에 따른 CSS 클래스 반환
+const getStatusClass = (status) => {
+  const classMap = {
+    'CONFIRMED': 'status-confirmed',
+    'CANCELED': 'status-canceled',
+    'COMPLETED': 'status-completed',
+    'WAITING': 'status-waiting',
+    'FAILED': 'status-failed'
+  };
+  return classMap[status] || 'status-default';
 };
 
 const fetchBookings = async () => {
@@ -164,6 +180,61 @@ h1 {
 .card-body strong {
   color: #333;
   font-weight: 500;
+}
+
+/* 예약 상태 배지 스타일 */
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  min-width: 60px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 확정 상태 - 초록색 (긍정적, 성공) */
+.status-confirmed {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  border: 1px solid #4CAF50;
+}
+
+/* 취소됨 상태 - 빨간색 (부정적, 중단) */
+.status-canceled {
+  background: linear-gradient(135deg, #f44336, #d32f2f);
+  color: white;
+  border: 1px solid #f44336;
+}
+
+/* 완료 상태 - 파란색 (중립적, 완료) */
+.status-completed {
+  background: linear-gradient(135deg, #2196F3, #1976D2);
+  color: white;
+  border: 1px solid #2196F3;
+}
+
+/* 대기중 상태 - 주황색 (주의, 진행중) */
+.status-waiting {
+  background: linear-gradient(135deg, #FF9800, #F57C00);
+  color: white;
+  border: 1px solid #FF9800;
+}
+
+/* 실패 상태 - 회색 (부정적, 실패) */
+.status-failed {
+  background: linear-gradient(135deg, #9E9E9E, #757575);
+  color: white;
+  border: 1px solid #9E9E9E;
+}
+
+/* 기본 상태 */
+.status-default {
+  background: linear-gradient(135deg, #E0E0E0, #BDBDBD);
+  color: #424242;
+  border: 1px solid #E0E0E0;
 }
 
 .card-actions {

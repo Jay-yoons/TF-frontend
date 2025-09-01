@@ -203,24 +203,27 @@ export const useUserStore = defineStore('user', {
         // 2. Cognito 세션 완전 종료를 위한 강제 로그아웃
         const cognitoLogoutUrl = `https://ap-northeast-2bdkxgjghs.auth.ap-northeast-2.amazoncognito.com/logout?client_id=k2q60p4rkctc3mpon0dui3v8h&logout_uri=https://talkingpotato.shop`;
         
-        // 3. 로그아웃 진행 상태 표시
+        // 3. 로그아웃 성공 토스트 표시
+        window.showLogoutSuccessToast = true;
+        
+        // 4. 로그아웃 진행 상태 표시
         console.log('Cognito 로그아웃 페이지로 이동 중...');
         
-        // 4. 히스토리 조작으로 뒤로가기 방지
+        // 5. 히스토리 조작으로 뒤로가기 방지
         window.history.replaceState(null, '', window.location.href);
         
-        // 5. Cognito 로그아웃 페이지로 이동 (타임아웃 설정)
+        // 6. Cognito 로그아웃 페이지로 이동 (타임아웃 설정)
         const logoutTimeout = setTimeout(() => {
           console.error('Cognito 로그아웃 타임아웃. 메인 페이지로 이동합니다.');
           window.location.href = 'https://talkingpotato.shop';
         }, 10000); // 10초 타임아웃
         
-        // 6. 페이지 이동 전 타임아웃 클리어
+        // 7. 페이지 이동 전 타임아웃 클리어
         window.addEventListener('beforeunload', () => {
           clearTimeout(logoutTimeout);
         });
         
-        // 7. Cognito 로그아웃 페이지로 이동
+        // 8. Cognito 로그아웃 페이지로 이동
         window.location.href = cognitoLogoutUrl;
 
       } catch (e) {
