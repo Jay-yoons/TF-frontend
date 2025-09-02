@@ -34,7 +34,7 @@
         </div>
       </div>
 
-      <button @click="createBooking" class="booking-button" :disabled="!isBookingValid">
+      <button @click="createBooking" class="booking-button" :disabled="!isBookingValid || loading">
         예약 확정
       </button>
     </div>
@@ -48,7 +48,7 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from '@/api/axios';
-import { getCurrentUserId } from '@/utils/auth';
+import { getCurrentUserId, getCurrentUserIdFromSub } from '@/utils/auth';
 
 export default {
   name: 'BookingPage',
@@ -63,22 +63,17 @@ export default {
     const reservationDate = ref('');
     const reservationTime = ref('');
     const availableSeats = ref(null);
+    let eventSource = null;
 
     const today = computed(() => {
       const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      return now.toISOString().split('T')[0];
     });
 
     const maxDate = computed(() => {
       const now = new Date();
       now.setDate(now.getDate() + 7);
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      return now.toISOString().split('T')[0];
     });
 
     const timeOptions = computed(() => {
@@ -86,36 +81,30 @@ export default {
       const openTime = store.value.openTime.split(':');
       const closeTime = store.value.closeTime.split(':');
       const options = [];
+
       let currentHour = parseInt(openTime[0], 10);
       let closeHour = parseInt(closeTime[0], 10);
       let closeMinute = parseInt(closeTime[1], 10);
-      
+
       const now = new Date();
       const currentHours = now.getHours();
-      const currentDate = now.toISOString().slice(0, 10);
+      const currentDate = now.toISOString().split('T')[0];
 
-      // 종료 시간이 00:00일 경우 24:00으로 처리
-      if (closeHour === 0 && closeMinute === 0) {
-        closeHour = 24;
-      }
-      
+      if (closeHour === 0 && closeMinute === 0) closeHour = 24;
+
       while (currentHour < closeHour) {
         const hour = String(currentHour).padStart(2, '0');
         const optionTime = `${hour}:00`;
 
-        // 오늘 날짜인 경우, 현재 시간 이후의 시간만 추가
         if (reservationDate.value === currentDate) {
-          const optionHours = parseInt(hour, 10);
-          
-          if (optionHours > currentHours) {
-            options.push(optionTime);
-          }
+          if (currentHour > currentHours) options.push(optionTime);
         } else {
-          // 오늘이 아닌 경우 모든 시간 추가
           options.push(optionTime);
         }
+
         currentHour += 2;
       }
+
       return options;
     });
 
@@ -127,7 +116,6 @@ export default {
       try {
         const response = await axios.get(`/api/stores/${storeId.value}`);
         store.value = response.data;
-        // 초기 잔여 좌석을 가게의 총 좌석 수로 설정
         availableSeats.value = store.value.seatNum;
       } catch (e) {
         error.value = `가게 정보를 불러오는 데 실패했습니다: ${e.message}`;
@@ -136,101 +124,126 @@ export default {
       }
     };
 
-    // 선택된 날짜와 시간에 따라 잔여 좌석 수를 가져오는 함수
     const updateAvailableSeats = async () => {
       if (!reservationDate.value || !reservationTime.value) {
-        availableSeats.value = store.value.seatNum;
+        availableSeats.value = store.value?.seatNum ?? 0;
         return;
       }
 
       loading.value = true;
       error.value = null;
+
       try {
         const dateTime = `${reservationDate.value}T${reservationTime.value}`;
-
         const response = await axios.get(`/api/bookings/seats/${storeId.value}`, {
           params: { dateTime },
-          headers: {
-            Authorization: undefined
-          } // Authorization 제거됨
+          headers: { Authorization: undefined }
         });
+
         const bookedSeats = response.data;
         availableSeats.value = store.value.seatNum - bookedSeats;
+
         if (count.value > availableSeats.value) {
           count.value = availableSeats.value;
         }
       } catch (e) {
         console.error('잔여 좌석 조회 실패:', e);
         error.value = `잔여 좌석 정보를 불러오는 데 실패했습니다: ${e.response?.data?.message || e.message}`;
-        availableSeats.value = 0; // 오류 발생 시 좌석을 0으로 설정
+        availableSeats.value = 0;
       } finally {
         loading.value = false;
       }
     };
 
+    const setupSSE = () => {
+      const userId = getCurrentUserIdFromSub();
+      console.log('userId for SSE:', userId);
+      const accessToken = localStorage.getItem('accessToken');
+      if (!userId || !accessToken) return;
+
+      if (eventSource) eventSource.close();
+
+      eventSource = new EventSource(`${axios.defaults.baseURL}/api/bookings/booking-status/${userId}?token=${accessToken}`);
+
+      eventSource.addEventListener('connect', (e) => {
+        console.log('SSE 연결 확인:', e.data);
+      });
+
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        alert(data.message);
+
+        if (eventSource) eventSource.close();
+        loading.value = false;
+
+        if (data.status === 'success' && data.bookingId) {
+          router.push({ name: 'BookingDetail', params: { bookingNum: data.bookingId } });
+        } else if (data.status === 'failure') {
+          error.value = data.message;
+        }
+      };
+
+      eventSource.onerror = (e) => {
+        console.error('SSE 연결 실패:', e);
+        loading.value = false;
+        error.value = '예약 SSE 연결 실패';
+        if (eventSource) eventSource.close();
+      };
+
+      window.addEventListener('beforeunload', () => {
+        if (eventSource) eventSource.close();
+      });
+    };
+
     const createBooking = async () => {
-      loading.value = true;
       error.value = null;
 
+      const userId = getCurrentUserId();
+      const accessToken = localStorage.getItem('accessToken');
+
+      if (!userId || !accessToken) {
+        alert('예약을 위해 로그인이 필요합니다.');
+        return;
+      }
+
+      if (!reservationDate.value || !reservationTime.value) {
+        alert('예약 날짜와 시간을 모두 선택해주세요.');
+        return;
+      }
+
+      if (count.value < 1 || count.value > availableSeats.value) {
+        alert(`예약 가능한 좌석 수는 ${availableSeats.value}석 입니다.`);
+        return;
+      }
+
+      loading.value = true; // 예약 요청 시작 → 로딩 ON
+
+      const bookingDate = `${reservationDate.value}T${reservationTime.value}:00`;
+      const bookingRequest = {
+        storeId: storeId.value,
+        userId: userId,
+        count: count.value,
+        bookingDate: bookingDate,
+        seats: store.value.seatNum,
+      };
+
       try {
-        const userId = getCurrentUserId();
-        const accessToken = localStorage.getItem('accessToken');
+        const headers = { Authorization: `Bearer ${accessToken}` };
+        await axios.post('/api/bookings/new', bookingRequest, { headers });
 
-        if (!userId || !accessToken) {
-          alert('예약을 위해 로그인이 필요합니다.');
-          loading.value = false;
-          return;
-        }
-
-        if (!reservationDate.value || !reservationTime.value) {
-          alert('예약 날짜와 시간을 모두 선택해주세요.');
-          loading.value = false;
-          return;
-        }
-
-        if (count.value < 1 || count.value > availableSeats.value) {
-          alert(`예약 가능한 좌석 수는 ${availableSeats.value}석 입니다.`);
-          loading.value = false;
-          return;
-        }
-
-        const headers = {
-          Authorization: `Bearer ${accessToken}`,
-        };
-
-        const bookingDate = `${reservationDate.value}T${reservationTime.value}:00`;
-
-        const bookingRequest = {
-          storeId: storeId.value,
-          userId: userId,
-          count: count.value,
-          bookingDate: bookingDate,
-          seats: store.value.seatNum,
-        };
-
-        const bookingResponse = await axios.post('/api/bookings/new', bookingRequest, { headers });
-        console.log('예약 성공:', bookingResponse.data);
-
-        const bookingNum = bookingResponse.data.bookingNum;
-
-        if (bookingNum) {
-          router.push({ name: 'BookingDetail', params: { bookingNum } });
-        } else {
-          throw new Error('API 응답에 예약 번호가 없습니다.');
-        }
+        // 요청은 성공 → SSE 응답 기다림
       } catch (e) {
-        console.error('예약 실패:', e);
-        error.value = `작업 실패: ${e.response?.data?.message || e.message}`;
-      } finally {
+        console.error('예약 요청 실패:', e);
+        error.value = `예약 요청 실패: ${e.response?.data?.message || e.message}`;
         loading.value = false;
       }
     };
 
     onMounted(() => {
       fetchStoreDetail();
+      setupSSE();
     });
 
-    // 선택된 날짜 또는 시간이 변경될 때 잔여 좌석 업데이트
     watch([reservationDate, reservationTime], () => {
       updateAvailableSeats();
     });
