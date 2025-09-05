@@ -78,9 +78,13 @@ export const useUserStore = defineStore('user', {
       this.loading = true;
       this.error = null;
       try {
+        console.log('=== fetchMyInfo 시작 ===');
         const response = await axios.get('/api/users/me');
+        console.log('API 응답:', response.data);
         this.user = response.data;
+        console.log('user 객체 설정:', this.user);
         this.isAuthenticated = true;
+        console.log('=== fetchMyInfo 완료 ===');
       } catch (e) {
         if (e.response && e.response.status === 401) {
           console.log("Authentication error (401). Clearing data without logout message.");
@@ -262,9 +266,11 @@ export const useUserStore = defineStore('user', {
       try {
         // ✨ 변경: FavoriteController의 /api/favorites/me 엔드포인트 사용
         const response = await axios.get('/api/favorites/me');
-        this.favorites = response.data;
+        this.favorites = response.data || [];
       } catch (e) {
+        console.error('즐겨찾기 조회 실패:', e);
         this.error = 'Failed to fetch favorites list.';
+        this.favorites = [];
       } finally {
         this.loading = false;
       }
@@ -276,10 +282,12 @@ export const useUserStore = defineStore('user', {
       this.error = null;
       try {
         // ✨ 변경: FavoriteController에 개수 조회 엔드포인트가 없으므로 목록을 불러와서 개수 반환
-        const favorites = await this.fetchFavorites();
-        this.favoriteCount = favorites ? favorites.length : 0;
+        await this.fetchFavorites();
+        this.favoriteCount = this.favorites ? this.favorites.length : 0;
       } catch (e) {
+        console.error('즐겨찾기 개수 조회 실패:', e);
         this.error = 'Failed to fetch favorite count.';
+        this.favoriteCount = 0;
       } finally {
         this.loading = false;
       }

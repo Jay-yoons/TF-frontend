@@ -11,9 +11,9 @@
       <section class="mb-8">
         <h2 class="section-title">내 정보</h2>
         <div class="info-card">
-          <p>이름: {{ user.userInfo.userName }}</p>
-          <p>전화번호: {{ user.userInfo.formattedPhoneNumber || displayPhoneNumber(user.userInfo.phoneNumber) }}</p>
-          <p>주소: {{ user.userInfo.userLocation }}</p>
+          <p>이름: {{ user?.userInfo?.userName || '정보 없음' }}</p>
+          <p>전화번호: {{ user?.userInfo?.formattedPhoneNumber || displayPhoneNumber(user?.userInfo?.phoneNumber) || '정보 없음' }}</p>
+          <p>주소: {{ user?.userInfo?.userLocation || '정보 없음' }}</p>
         </div>
       </section>
 
@@ -100,14 +100,25 @@ const fetchMyReviews = async () => {
 };
 
 onMounted(async () => {
-  await userStore.fetchMyInfo();
-  if (userStore.user) {
-    user.value = userStore.user;
-  }
+  try {
+    console.log('=== MyPage onMounted 시작 ===');
+    await userStore.fetchMyInfo();
+    console.log('userStore.user:', userStore.user);
+    if (userStore.user) {
+      user.value = userStore.user;
+      console.log('user.value 설정:', user.value);
+    }
 
-  await userStore.fetchFavorites();
-  await userStore.fetchFavoriteCount();
-  await fetchMyReviews();
+    // 즐겨찾기 관련 데이터는 병렬로 처리
+    await Promise.all([
+      userStore.fetchFavorites(),
+      userStore.fetchFavoriteCount(),
+      fetchMyReviews()
+    ]);
+    console.log('=== MyPage onMounted 완료 ===');
+  } catch (error) {
+    console.error('마이페이지 데이터 로딩 중 오류:', error);
+  }
 });
 </script>
 
