@@ -15,27 +15,40 @@
       <div class="booking-form">
         <div class="form-group">
           <label for="reservationDate">예약 날짜</label>
-          <input id="reservationDate" type="date" v-model="reservationDate" :min="today" :max="maxDate"
-            @change="updateAvailableSeats" />
+          <DatePicker 
+            v-model="reservationDate" 
+            :min-date="today" 
+            :max-date="maxDate"
+            placeholder="예약 날짜를 선택하세요"
+            @update:modelValue="updateAvailableSeats"
+          />
         </div>
 
         <div class="form-group">
           <label for="reservationTime">예약 시간</label>
-          <select id="reservationTime" v-model="reservationTime" @change="updateAvailableSeats">
-            <option v-for="time in timeOptions" :key="time" :value="time">
-              {{ time }}
-            </option>
-          </select>
+          <TimePicker 
+            v-model="reservationTime" 
+            :time-options="timeOptions"
+            placeholder="예약 시간을 선택하세요"
+            @update:modelValue="updateAvailableSeats"
+          />
         </div>
 
         <div class="form-group">
-          <label for="seatCount">예약 좌석 수</label>
-          <input id="seatCount" type="number" v-model.number="count" min="1" :max="availableSeats" />
+          <SeatCounter 
+            v-model="count" 
+            :max-seats="availableSeats || 10"
+            :min-seats="1"
+          />
         </div>
       </div>
 
       <button @click="createBooking" class="booking-button" :disabled="!isBookingValid || loading">
-        예약 확정
+        <div class="button-content">
+          <i v-if="!loading" class="button-icon">📅</i>
+          <i v-else class="loading-spinner">⏳</i>
+          <span class="button-text">{{ loading ? '예약 처리 중...' : '예약 확정' }}</span>
+        </div>
       </button>
     </div>
     <div v-else class="empty-state">
@@ -49,9 +62,17 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from '@/api/axios';
 import { getCurrentUserId, getCurrentUserIdFromSub } from '@/utils/auth';
+import DatePicker from '@/components/DatePicker.vue';
+import TimePicker from '@/components/TimePicker.vue';
+import SeatCounter from '@/components/SeatCounter.vue';
 
 export default {
   name: 'BookingPage',
+  components: {
+    DatePicker,
+    TimePicker,
+    SeatCounter
+  },
   setup() {
     const route = useRoute();
     const router = useRouter();
@@ -271,8 +292,11 @@ export default {
 .container {
   max-width: 600px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 24px;
   font-family: 'Noto Sans KR', sans-serif;
+  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+  min-height: 100vh;
+  border-radius: 0;
 }
 
 h1 {
@@ -293,29 +317,67 @@ h1 {
 }
 
 .store-info-card {
-  background-color: #f8f8f8;
-  border-radius: 12px;
-  padding: 25px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  margin-bottom: 20px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+  margin-bottom: 24px;
   text-align: center;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.store-info-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    transform: translateX(-100%) translateY(-100%) rotate(30deg);
+  }
+  50% {
+    transform: translateX(100%) translateY(100%) rotate(30deg);
+  }
 }
 
 .store-info-card h2 {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: bold;
-  color: #333;
-  margin-bottom: 8px;
+  color: white;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .store-info-card p {
   font-size: 16px;
-  color: #555;
+  color: rgba(255, 255, 255, 0.9);
+  position: relative;
+  z-index: 1;
 }
 
 .store-info-card strong {
-  color: #ff5722;
+  color: #ffeb3b;
   font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.booking-form {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
 }
 
 .form-group {
@@ -350,24 +412,96 @@ h1 {
 
 .booking-button {
   width: 100%;
-  padding: 15px;
-  background-color: #ff5722;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #ff5722, #ff7043);
   color: #ffffff;
   border: none;
-  border-radius: 8px;
+  border-radius: 16px;
   font-size: 18px;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(255, 87, 34, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.booking-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.booking-button:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 .booking-button:hover:not(:disabled) {
-  background-color: #e64a19;
+  background: linear-gradient(135deg, #e64a19, #ff5722);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 87, 34, 0.4);
+}
+
+.booking-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(255, 87, 34, 0.3);
 }
 
 .booking-button:disabled {
-  background-color: #ccc;
+  background: linear-gradient(135deg, #ccc, #bbb);
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.button-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.button-icon {
+  font-size: 20px;
+  animation: bounce 2s infinite;
+}
+
+.loading-spinner {
+  font-size: 20px;
+  animation: spin 1s linear infinite;
+}
+
+.button-text {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-3px);
+  }
+  60% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-state {

@@ -81,6 +81,16 @@ export const useUserStore = defineStore('user', {
         console.log('=== fetchMyInfo 시작 ===');
         const response = await axios.get('/api/users/me');
         console.log('API 응답:', response.data);
+        
+        // API 응답이 HTML인 경우 처리
+        if (typeof response.data === 'string' && response.data.includes('<!doctype html>')) {
+          console.error('API 응답이 HTML입니다. 라우팅 문제가 있습니다.');
+          this.user = null;
+          this.isAuthenticated = false;
+          this.error = 'API 라우팅 오류: 백엔드 서버에 연결할 수 없습니다.';
+          return;
+        }
+        
         this.user = response.data;
         console.log('user 객체 설정:', this.user);
         this.isAuthenticated = true;

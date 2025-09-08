@@ -11,9 +11,9 @@
       <section class="mb-8">
         <h2 class="section-title">내 정보</h2>
         <div class="info-card">
-          <p>이름: {{ user?.userInfo?.userName || '정보 없음' }}</p>
-          <p>전화번호: {{ user?.userInfo?.formattedPhoneNumber || displayPhoneNumber(user?.userInfo?.phoneNumber) || '정보 없음' }}</p>
-          <p>주소: {{ user?.userInfo?.userLocation || '정보 없음' }}</p>
+          <p>이름: {{ user.userInfo.userName || '정보 없음' }}</p>
+          <p>전화번호: {{ user.userInfo.formattedPhoneNumber || displayPhoneNumber(user.userInfo.phoneNumber) || '정보 없음' }}</p>
+          <p>주소: {{ user.userInfo.userLocation || '정보 없음' }}</p>
         </div>
       </section>
 
