@@ -122,10 +122,10 @@ export default {
         if (current < today && !isToday) isDisabled = true;
 
         // 로컬 시간대 기준으로 날짜 문자열 생성
-        const year = current.getFullYear();
-        const month = String(current.getMonth() + 1).padStart(2, '0');
-        const day = String(current.getDate()).padStart(2, '0');
-        const dateString = `${year}-${month}-${day}`;
+        const currentYear = current.getFullYear();
+        const currentMonth = String(current.getMonth() + 1).padStart(2, '0');
+        const currentDay = String(current.getDate()).padStart(2, '0');
+        const dateString = `${currentYear}-${currentMonth}-${currentDay}`;
 
         days.push({
           date: dateString,
@@ -162,10 +162,10 @@ export default {
     const selectToday = () => {
       const today = new Date();
       // 로컬 시간대 기준으로 날짜 문자열 생성
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      const todayString = `${year}-${month}-${day}`;
+      const todayYear = today.getFullYear();
+      const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
+      const todayDay = String(today.getDate()).padStart(2, '0');
+      const todayString = `${todayYear}-${todayMonth}-${todayDay}`;
       
       if (props.minDate && todayString < props.minDate) return;
       if (props.maxDate && todayString > props.maxDate) return;
