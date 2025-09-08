@@ -104,7 +104,8 @@ const getStatusClass = (status) => {
 const cancelBooking = async () => {
   const accessToken = localStorage.getItem('accessToken');
   if (!accessToken) {
-    alert('예약을 취소하려면 로그인이 필요합니다.');
+    window.showBookingCancelErrorModal = true;
+    window.bookingCancelErrorMessage = '예약을 취소하려면 로그인이 필요합니다.';
     return;
   }
   const headers = { Authorization: `Bearer ${accessToken}` };
@@ -117,12 +118,14 @@ const cancelBooking = async () => {
     );
     console.log('예약 취소 성공:', cancelBookingResponse.data);
 
-    alert('예약이 성공적으로 취소되었습니다');
+    window.showBookingCancelSuccessModal = true;
+    window.bookingCancelSuccessMessage = '예약이 성공적으로 취소되었습니다.';
 
     fetchBookingDetail(booking.value.bookingNum);
   } catch (error) {
     console.error('예약 취소 작업 실패:', error);
-    alert(`예약 취소에 실패했습니다: ${error.message}`);
+    window.showBookingCancelErrorModal = true;
+    window.bookingCancelErrorMessage = `예약 취소에 실패했습니다: ${error.message}`;
   }
 };
 

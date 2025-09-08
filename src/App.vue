@@ -31,7 +31,7 @@
 
     <!-- 메시지 모달 -->
     <MessageModal :is-visible="showModal" :title="modalTitle" :message="modalMessage" :button-text="modalButtonText"
-      @close="closeModal" />
+      :type="modalType" @close="closeModal" />
     
 
   </div>
@@ -56,13 +56,13 @@ export default {
     const modalTitle = ref('');
     const modalMessage = ref('');
     const modalButtonText = ref('확인');
+    const modalType = ref('info');
 
-
-
-    const showMessageModal = (title, message, buttonText = '확인') => {
+    const showMessageModal = (title, message, buttonText = '확인', type = 'info') => {
       modalTitle.value = title;
       modalMessage.value = message;
       modalButtonText.value = buttonText;
+      modalType.value = type;
       showModal.value = true;
     };
 
@@ -74,21 +74,49 @@ export default {
     const handleGlobalModalEvents = () => {
       // 로그인 성공 모달
       if (window.showLoginSuccessModal) {
-        showMessageModal('로그인 성공', '로그인이 성공적으로 완료되었습니다!');
+        showMessageModal('로그인 성공', '로그인이 성공적으로 완료되었습니다!', '확인', 'success');
         window.showLoginSuccessModal = false;
       }
 
       // 로그인 오류 모달
       if (window.showLoginErrorModal) {
-        showMessageModal('로그인 실패', window.loginErrorMessage || '로그인 중 오류가 발생했습니다.');
+        showMessageModal('로그인 실패', window.loginErrorMessage || '로그인 중 오류가 발생했습니다.', '확인', 'error');
         window.showLoginErrorModal = false;
         window.loginErrorMessage = '';
       }
 
       // 로그아웃 성공 모달
       if (window.showLogoutSuccessModal) {
-        showMessageModal('로그아웃 완료', '성공적으로 로그아웃되었습니다.');
+        showMessageModal('로그아웃 완료', '성공적으로 로그아웃되었습니다.', '확인', 'success');
         window.showLogoutSuccessModal = false;
+      }
+
+      // 예약 성공 모달
+      if (window.showBookingSuccessModal) {
+        showMessageModal('예약 완료', window.bookingSuccessMessage || '예약이 성공적으로 완료되었습니다!', '확인', 'success');
+        window.showBookingSuccessModal = false;
+        window.bookingSuccessMessage = '';
+      }
+
+      // 예약 실패 모달
+      if (window.showBookingErrorModal) {
+        showMessageModal('예약 실패', window.bookingErrorMessage || '예약 처리 중 오류가 발생했습니다.', '확인', 'error');
+        window.showBookingErrorModal = false;
+        window.bookingErrorMessage = '';
+      }
+
+      // 예약 취소 성공 모달
+      if (window.showBookingCancelSuccessModal) {
+        showMessageModal('예약 취소 완료', window.bookingCancelSuccessMessage || '예약이 성공적으로 취소되었습니다.', '확인', 'success');
+        window.showBookingCancelSuccessModal = false;
+        window.bookingCancelSuccessMessage = '';
+      }
+
+      // 예약 취소 실패 모달
+      if (window.showBookingCancelErrorModal) {
+        showMessageModal('예약 취소 실패', window.bookingCancelErrorMessage || '예약 취소 중 오류가 발생했습니다.', '확인', 'error');
+        window.showBookingCancelErrorModal = false;
+        window.bookingCancelErrorMessage = '';
       }
     };
 
@@ -118,6 +146,7 @@ export default {
         modalTitle,
         modalMessage,
         modalButtonText,
+        modalType,
         closeModal
       };
   },

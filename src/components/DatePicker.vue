@@ -121,8 +121,14 @@ export default {
         if (maxDateObj && current > maxDateObj) isDisabled = true;
         if (current < today && !isToday) isDisabled = true;
 
+        // 로컬 시간대 기준으로 날짜 문자열 생성
+        const year = current.getFullYear();
+        const month = String(current.getMonth() + 1).padStart(2, '0');
+        const day = String(current.getDate()).padStart(2, '0');
+        const dateString = `${year}-${month}-${day}`;
+
         days.push({
-          date: current.toISOString().split('T')[0],
+          date: dateString,
           day: current.getDate(),
           isCurrentMonth,
           isToday,
@@ -155,7 +161,11 @@ export default {
 
     const selectToday = () => {
       const today = new Date();
-      const todayString = today.toISOString().split('T')[0];
+      // 로컬 시간대 기준으로 날짜 문자열 생성
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayString = `${year}-${month}-${day}`;
       
       if (props.minDate && todayString < props.minDate) return;
       if (props.maxDate && todayString > props.maxDate) return;

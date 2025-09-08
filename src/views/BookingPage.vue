@@ -88,13 +88,19 @@ export default {
 
     const today = computed(() => {
       const now = new Date();
-      return now.toISOString().split('T')[0];
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     });
 
     const maxDate = computed(() => {
       const now = new Date();
       now.setDate(now.getDate() + 7);
-      return now.toISOString().split('T')[0];
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     });
 
     const timeOptions = computed(() => {
@@ -109,7 +115,10 @@ export default {
 
       const now = new Date();
       const currentHours = now.getHours();
-      const currentDate = now.toISOString().split('T')[0];
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const currentDate = `${year}-${month}-${day}`;
 
       if (closeHour === 0 && closeMinute === 0) closeHour = 24;
 
@@ -192,7 +201,15 @@ export default {
 
       eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        alert(data.message);
+        
+        // 커스텀 모달로 알림 표시
+        if (data.status === 'success') {
+          window.showBookingSuccessModal = true;
+          window.bookingSuccessMessage = data.message;
+        } else if (data.status === 'failure') {
+          window.showBookingErrorModal = true;
+          window.bookingErrorMessage = data.message;
+        }
 
         if (eventSource) eventSource.close();
         loading.value = false;
