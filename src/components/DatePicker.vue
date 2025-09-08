@@ -99,9 +99,8 @@ export default {
       const minDateObj = props.minDate ? new Date(props.minDate) : null;
       const maxDateObj = props.maxDate ? new Date(props.maxDate) : null;
 
-      // 현재 월의 첫 번째 날과 마지막 날
+      // 현재 월의 첫 번째 날
       const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
       
       // 달력에 표시할 시작 날짜 (이전 달의 일부 포함)
       const startDate = new Date(firstDay);
