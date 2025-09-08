@@ -107,6 +107,26 @@ export default {
                 // 로컬 스토리지도 완전 삭제
                 localStorage.clear();
                 
+                // Cognito 관련 모든 쿠키 삭제 (더 포괄적으로)
+                const cognitoCookies = [
+                    'CognitoIdentityServiceProvider',
+                    'XSRF-TOKEN',
+                    'AWSELB',
+                    'AWSELBCORS',
+                    'accessToken',
+                    'idToken',
+                    'refreshToken'
+                ];
+                
+                cognitoCookies.forEach(cookieName => {
+                    // 현재 도메인
+                    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                    // talkingpotato.shop 도메인
+                    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=talkingpotato.shop;`;
+                    // .talkingpotato.shop 서브도메인
+                    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.talkingpotato.shop;`;
+                });
+                
                 // userStore의 handleCognitoCallback 액션 호출
                 await userStore.handleCognitoCallback(code, state);
 
@@ -119,8 +139,28 @@ export default {
                 }
             } catch (error) {
                 console.error('로그인 콜백 처리 실패:', error);
-                console.error('에러 응답 전체:', error.response);
-                console.error('에러 응답 데이터:', error.response?.data);
+                
+                // 에러 발생 시에도 캐시 완전 삭제
+                userStore.clearAllData();
+                sessionStorage.clear();
+                localStorage.clear();
+                
+                // Cognito 관련 모든 쿠키 삭제
+                const cognitoCookies = [
+                    'CognitoIdentityServiceProvider',
+                    'XSRF-TOKEN',
+                    'AWSELB',
+                    'AWSELBCORS',
+                    'accessToken',
+                    'idToken',
+                    'refreshToken'
+                ];
+                
+                cognitoCookies.forEach(cookieName => {
+                    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=talkingpotato.shop;`;
+                    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.talkingpotato.shop;`;
+                });
                 
                 // 에러 응답에서 상세 정보 추출
                 let errorMessage = '로그인에 실패했습니다.';
@@ -128,23 +168,16 @@ export default {
                 
                 if (error.response && error.response.data) {
                     const errorData = error.response.data;
-                    console.log('에러 데이터 파싱:', errorData);
                     errorType = errorData.error || 'LOGIN_FAILED';
-                    console.log('에러 타입:', errorType);
                     
                     if (errorType === 'DUPLICATE_PHONE') {
                         errorMessage = '이미 등록된 전화번호입니다. 다른 전화번호로 회원가입을 시도해주세요.';
-                        console.log('중복 전화번호 에러 메시지 설정');
                     } else if (errorData.message) {
                         errorMessage = errorData.message;
-                        console.log('백엔드 에러 메시지 사용:', errorData.message);
                     }
                 } else if (error.message) {
                     errorMessage = error.message;
-                    console.log('기본 에러 메시지 사용:', error.message);
                 }
-                
-                console.log('최종 에러 메시지:', errorMessage);
                 
                 // 모달로 오류 메시지 표시
                 window.showLoginErrorModal = true;
