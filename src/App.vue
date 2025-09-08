@@ -118,6 +118,27 @@ export default {
         window.showBookingCancelErrorModal = false;
         window.bookingCancelErrorMessage = '';
       }
+
+      // 예약 좌석 수 오류 모달
+      if (window.showBookingSeatErrorModal) {
+        showMessageModal('좌석 수 오류', window.bookingSeatErrorMessage || '예약 가능한 좌석 수를 확인해주세요.', '확인', 'warning');
+        window.showBookingSeatErrorModal = false;
+        window.bookingSeatErrorMessage = '';
+      }
+
+      // 예약 로그인 오류 모달
+      if (window.showBookingLoginErrorModal) {
+        showMessageModal('로그인 필요', window.bookingLoginErrorMessage || '예약을 위해 로그인이 필요합니다.', '확인', 'warning');
+        window.showBookingLoginErrorModal = false;
+        window.bookingLoginErrorMessage = '';
+      }
+
+      // 예약 날짜/시간 오류 모달
+      if (window.showBookingDateErrorModal) {
+        showMessageModal('날짜/시간 선택 필요', window.bookingDateErrorMessage || '예약 날짜와 시간을 모두 선택해주세요.', '확인', 'warning');
+        window.showBookingDateErrorModal = false;
+        window.bookingDateErrorMessage = '';
+      }
     };
 
     // 주기적으로 전역 모달 이벤트 확인

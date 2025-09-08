@@ -39,6 +39,7 @@
             v-model="count" 
             :max-seats="availableSeats || 10"
             :min-seats="1"
+            @update:modelValue="onSeatCountChange"
           />
         </div>
       </div>
@@ -173,9 +174,8 @@ export default {
         const bookedSeats = response.data;
         availableSeats.value = store.value.seatNum - bookedSeats;
 
-        if (count.value > availableSeats.value) {
-          count.value = availableSeats.value;
-        }
+        // 사용자가 선택한 좌석 수를 강제로 변경하지 않음
+        // 대신 SeatCounter에서 maxSeats로 제한하도록 함
       } catch (e) {
         console.error('잔여 좌석 조회 실패:', e);
         error.value = `잔여 좌석 정보를 불러오는 데 실패했습니다: ${e.response?.data?.message || e.message}`;
@@ -183,6 +183,11 @@ export default {
       } finally {
         loading.value = false;
       }
+    };
+
+    const onSeatCountChange = (newCount) => {
+      console.log('좌석 수 변경:', newCount, '최대 가능:', availableSeats.value);
+      // 좌석 수가 변경되었을 때 추가 로직이 필요하면 여기에 추가
     };
 
     const setupSSE = () => {
@@ -240,17 +245,20 @@ export default {
       const accessToken = localStorage.getItem('accessToken');
 
       if (!userId || !accessToken) {
-        alert('예약을 위해 로그인이 필요합니다.');
+        window.showBookingLoginErrorModal = true;
+        window.bookingLoginErrorMessage = '예약을 위해 로그인이 필요합니다.';
         return;
       }
 
       if (!reservationDate.value || !reservationTime.value) {
-        alert('예약 날짜와 시간을 모두 선택해주세요.');
+        window.showBookingDateErrorModal = true;
+        window.bookingDateErrorMessage = '예약 날짜와 시간을 모두 선택해주세요.';
         return;
       }
 
       if (count.value < 1 || count.value > availableSeats.value) {
-        alert(`예약 가능한 좌석 수는 ${availableSeats.value}석 입니다.`);
+        window.showBookingSeatErrorModal = true;
+        window.bookingSeatErrorMessage = `예약 가능한 좌석 수는 ${availableSeats.value}석 입니다.`;
         return;
       }
 
@@ -300,6 +308,7 @@ export default {
       availableSeats,
       isBookingValid,
       createBooking,
+      onSeatCountChange,
     };
   },
 };
