@@ -29,6 +29,7 @@
           <TimePicker 
             v-model="reservationTime" 
             :time-options="timeOptions"
+            :disabled="!reservationDate"
             placeholder="예약 시간을 선택하세요"
             @update:modelValue="updateAvailableSeats"
           />

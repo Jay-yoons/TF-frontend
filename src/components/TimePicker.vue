@@ -1,6 +1,6 @@
 <template>
   <div class="time-picker">
-    <div class="time-input" @click="toggleDropdown" :class="{ 'focused': isOpen }">
+    <div class="time-input" @click="!disabled && toggleDropdown()" :class="{ 'focused': isOpen, 'disabled': disabled }">
       <div class="time-display">
         <i class="clock-icon">🕐</i>
         <span class="time-text">{{ displayTime || placeholder }}</span>
@@ -58,6 +58,10 @@ export default {
     disabledTimes: {
       type: Array,
       default: () => []
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   emits: ['update:modelValue'],
@@ -82,6 +86,7 @@ export default {
     };
 
     const toggleDropdown = () => {
+      if (props.disabled) return;
       isOpen.value = !isOpen.value;
     };
 
@@ -147,6 +152,18 @@ export default {
 .time-input.focused {
   border-color: #ff5722;
   box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.2);
+}
+
+.time-input.disabled {
+  background-color: #f5f5f5;
+  border-color: #e0e0e0;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.time-input.disabled:hover {
+  border-color: #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .time-display {
