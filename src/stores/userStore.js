@@ -172,6 +172,9 @@ export const useUserStore = defineStore('user', {
         localStorage.removeItem('idToken');
         localStorage.removeItem('refreshToken');
         sessionStorage.clear();
+        
+        // 원본 에러를 다시 던져서 CallbackPage에서 처리할 수 있도록 함
+        throw e;
       } finally {
         this.loading = false;
       }
