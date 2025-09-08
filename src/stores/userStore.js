@@ -146,7 +146,19 @@ export const useUserStore = defineStore('user', {
 
         await this.fetchMyInfo();
       } catch (e) {
-        this.error = 'Error during login process.';
+        // 에러 응답에서 상세 정보 추출
+        let errorMessage = 'Error during login process.';
+        
+        if (e.response && e.response.data) {
+          const errorData = e.response.data;
+          if (errorData.error === 'DUPLICATE_PHONE') {
+            errorMessage = '이미 등록된 전화번호입니다. 다른 전화번호로 회원가입을 시도해주세요.';
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        }
+        
+        this.error = errorMessage;
         // 로그인 실패 시에는 메시지 없이 데이터만 정리
         this.user = null;
         this.isAuthenticated = false;

@@ -1,0 +1,136 @@
+[33md9a18f2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m 시간 선택을 날짜 선택 후에만 가능하도록 수정
+[33m58c2f21[m 오늘 날짜 예약 가능하도록 수정
+[33mdfcbff2[m DatePicker 변수 충돌 문제 해결
+[33ma21ee55[m 좌석 수 선택 로직 개선 및 알림창 통합
+[33m94f8d25[m 🎨 알림창 UI 대폭 개선 및 시간대 문제 해결
+[33m3a683db[m 🐛 ESLint 에러 수정: 사용하지 않는 lastDay 변수 제거
+[33mebccf7c[m ✨ 예약 페이지 UI 대폭 개선
+[33m110a0fe[m 로그출력 추가
+[33mde3807c[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33m1aa5edc[m Trigger deployment for personal account testing
+[33mc803e84[m add console.log
+[33md26e515[m add getCurrentUserIdFromSub() in auth.js & modify setupSSE func
+[33m7ce4d62[m modify BookingPage.vue
+[33m155e4d3[m modify onMounted() & createBooking() in BookingPage.vue
+[33md9a8121[m add setTimeout in bookingPage.vue
+[33m8455aa2[m modify BookingPage.vue
+[33mda40826[m add token request parameter in  eventSource url
+[33mae824e8[m modify BookingPage.vue for SSE connection
+[33m557f9b9[m modify eventSource url endpoint in BookingPage.vue
+[33m765ebc3[m modify axios.js baseUrl
+[33mfc7a74b[m modify BookingPage.vue for using SSE
+[33mabc3958[m 오류 수정
+[33m95a62cd[m 코드 원복
+[33m83ee34b[m 로그인문제 수정
+[33mc0facd4[m 메시지창 오류수정
+[33m60d6b5f[m 알림창 토스트로 변경, 예약상태 직관성있게 수정
+[33md3eb130[m error
+[33mf8959c7[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33md3a484b[m 로그인 라우터 가드 추가
+[33m4982461[m remove back button on HomePage
+[33maf6348e[m modify goBack func in StoreList cause of loop
+[33m97782ee[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33m93af876[m modify goBack func in StoreDetail cause of loop
+[33mf45474c[m 인기가게 섹션 삭제
+[33m53962e1[m edit phoneFormatter.js
+[33m984fcc6[m edit phoneFormatter.js
+[33mb6fcbca[m 가게목록 페이지 수정 + 뒤로가기 버튼 추가
+[33m45374bb[m 빌드 오류 수정
+[33m383aff3[m 전체페이지 개선 + 뒤로가기 버튼  추가
+[33mc076676[m 지도 수정
+[33med3cfd1[m ESLint 오류 수정: router import에 eslint-disable 주석 추가
+[33m1cc0a8e[m 모바일 지도 오버레이 기능 추가: 지도 위에 목록 패널 표시
+[33mbcc222c[m 모바일 지도 UI 개선: 지도 크기, 마커 크기, 정보창 크기 최적화
+[33m2625ccf[m Resolve merge conflict in userStore.js
+[33m5cd671c[m 로그아웃 세션 관련 수정
+[33mad3a97e[m 0829 배포 및 기능 테스트 완료
+[33m73453ad[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33m638cdfb[m 0829 배포 및 기능 테스트 완료
+[33m59f9d67[m ReviewCreate.vue에 리뷰 중복 작성 방지 로직 추가
+[33m47a7c98[m BookingDetail.vue 토큰 수정 및 디버그 정보 추가
+[33m2f114be[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33m6e82da1[m 리뷰 작성 후 중복 작성 방지 기능 추가
+[33m4089232[m add router
+[33m2095f9f[m add logout Modal - recommit
+[33mc191486[m add logout Modal
+[33m354e698[m add logout popup
+[33m16a05a5[m rollback userStroe.js logout to commit cb59fe2
+[33m0a2fa4d[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33m8555272[m 백엔드 로그아웃 API 오류 무시 및 로컬 상태 초기화 우선
+[33mcdcd404[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33m3e8716f[m copy userStore.js
+[33m576d938[m 병합 충돌 해결 및 AWS Cognito 코드 완전 제거
+[33m9dacc28[m AWS Cognito 관련 코드 완전 제거 및 로그아웃 기능 단순화
+[33m4ba6697[m userStore 수정
+[33mff4bb0e[m Update userStore.js
+[33m7d5060c[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33me749125[m ㅕuserStore 수정
+[33m8eaa530[m Update userStore.js
+[33m6a5ac2e[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33m2832bd9[m LogoutConfirm 수정
+[33md42f1d6[m LogoutConfirm 수정
+[33m85d5d0b[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33mad113c5[m LogoutConfirm 수정
+[33m519aed2[m cursor 전체 수정
+[33m8afae6b[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33mdabdcc7[m for pull
+[33md11dbfa[m cursor 전체 수정
+[33me34ddfa[m cursor 전체 수정
+[33m42c7d03[m cursor 전체 수정
+[33m526962a[m cursor 전체 수정
+[33m26992d6[m cursor 전체 수정
+[33mc2bdf5a[m main.js 수정
+[33m14a5d80[m main.js 수정
+[33m15525d7[m main.js 수정
+[33m81006b4[m main.js 수정
+[33mae3970b[m main.js 수정
+[33mab2838d[m main.js 수정
+[33m83c0057[m userStore.js 수정
+[33m3c55e6c[m userStore.js 수정
+[33me6ed940[m LogoutConfirm.vue 추가
+[33me917e4b[m Index.js 수정
+[33mbbd9d00[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33m2f4d9b0[m Index.js 수정
+[33m40efeee[m 리뷰작성 관련 수정
+[33m6ab72a0[m Index.js 수정
+[33mc2bcd58[m Index.js 수정
+[33mb5449e6[m cognito 관련 롤백
+[33m1e5b7c7[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33m822b5e9[m 로그인 관련
+[33m08af32f[m userStore.js 수정
+[33mf7dd4a0[m userStore.js 수정/ index.js 원본 유지
+[33m3885905[m Merge branch 'main' of https://github.com/Jay-yoons/TF-frontend
+[33m1fe213a[m userStore.js index.js 수정
+[33m324cf66[m 리뷰 작성관련, 모바에 지도크기,favicon 변경
+[33m525bfd4[m Update index.js
+[33m5169b1f[m Update index.js
+[33m6633cc2[m Update index.js
+[33m69b1f3b[m Update index.js
+[33m0fcbd0a[m Update index.js
+[33m0b0376a[m Update index.js
+[33mc000b91[m Update index.js
+[33m0b94d9c[m Update index.js
+[33me709251[m Update userStore.js
+[33m1fdc7f0[m Update userStore.js
+[33m56cc7a4[m Update userStore.js
+[33m2b355e8[m Update userStore.js
+[33m092aea2[m Update userStore.js
+[33mc9863e5[m Update userStore.js
+[33md2cf21a[m modify logout func - async, await
+[33mbf987c1[m recommit
+[33m75d7e9e[m add /logout
+[33m9a26c67[m add /login
+[33m60c28e8[m Update userStore.js
+[33maca6fc4[m delete /login in congnitoLogoutUrl
+[33mecbb9cd[m add https://
+[33mcef2463[m delete const mainURL
+[33m59b72a0[m modify const mainURL
+[33mdaa423a[m modify userStore.js and deploy.yml - domain name
+[33mdf18d6c[m modify axios.js
+[33md40fe7d[m add parameter state in userStore.js handleCognitoCallback
+[33m4e21904[m modify axios
+[33mcb59fe2[m 기능 구현 및 로컬 테스트 완료
+[33m9879c3d[m modify 403 error with auth and modify booking
+[33mc0aa418[m 상세페이지,영업정보,이미지,지도 수정
+[33m82f2891[m 0821 Frontend 코드 수정
+[33madb906e[m[33m ([m[1;32mmaster[m[33m)[m 0821

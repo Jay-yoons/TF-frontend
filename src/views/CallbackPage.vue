@@ -119,9 +119,36 @@ export default {
                 }
             } catch (error) {
                 console.error('로그인 콜백 처리 실패:', error);
+                console.error('에러 응답 전체:', error.response);
+                console.error('에러 응답 데이터:', error.response?.data);
+                
+                // 에러 응답에서 상세 정보 추출
+                let errorMessage = '로그인에 실패했습니다.';
+                let errorType = 'LOGIN_FAILED';
+                
+                if (error.response && error.response.data) {
+                    const errorData = error.response.data;
+                    console.log('에러 데이터 파싱:', errorData);
+                    errorType = errorData.error || 'LOGIN_FAILED';
+                    console.log('에러 타입:', errorType);
+                    
+                    if (errorType === 'DUPLICATE_PHONE') {
+                        errorMessage = '이미 등록된 전화번호입니다. 다른 전화번호로 회원가입을 시도해주세요.';
+                        console.log('중복 전화번호 에러 메시지 설정');
+                    } else if (errorData.message) {
+                        errorMessage = errorData.message;
+                        console.log('백엔드 에러 메시지 사용:', errorData.message);
+                    }
+                } else if (error.message) {
+                    errorMessage = error.message;
+                    console.log('기본 에러 메시지 사용:', error.message);
+                }
+                
+                console.log('최종 에러 메시지:', errorMessage);
+                
                 // 모달로 오류 메시지 표시
                 window.showLoginErrorModal = true;
-                window.loginErrorMessage = `로그인 실패: ${error.message}`;
+                window.loginErrorMessage = errorMessage;
                 router.push('/');
             }
         };
