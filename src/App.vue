@@ -146,8 +146,36 @@ export default {
 
     const login = async () => {
       try {
+        // 로그인 전 기존 데이터 완전 정리
+        userStore.clearAllData();
+        sessionStorage.clear();
+        localStorage.clear();
+        
+        // Cognito 관련 모든 쿠키 삭제
+        const cognitoCookies = [
+          'CognitoIdentityServiceProvider',
+          'XSRF-TOKEN',
+          'AWSELB',
+          'AWSELBCORS',
+          'accessToken',
+          'idToken',
+          'refreshToken'
+        ];
+        
+        cognitoCookies.forEach(cookieName => {
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=talkingpotato.shop;`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.talkingpotato.shop;`;
+        });
+        
         const response = await axios.get('/api/users/login/url');
-        const loginUrl = response.data.url;
+        let loginUrl = response.data.url;
+        
+        // 강제 새로고침을 위한 타임스탬프 파라미터 추가
+        const timestamp = Date.now();
+        const separator = loginUrl.includes('?') ? '&' : '?';
+        loginUrl += `${separator}_t=${timestamp}&_refresh=1`;
+        
         window.location.href = loginUrl;
       } catch (err) {
         console.error('로그인 URL을 불러오는 데 실패했습니다.', err);

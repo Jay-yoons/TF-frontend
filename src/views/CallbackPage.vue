@@ -171,7 +171,7 @@ export default {
                     errorType = errorData.error || 'LOGIN_FAILED';
                     
                     if (errorType === 'DUPLICATE_PHONE') {
-                        errorMessage = '이미 등록된 전화번호입니다. 다른 전화번호로 회원가입을 시도해주세요.';
+                        errorMessage = '이미 등록된 전화번호입니다. 다른 전화번호로 회원가입을 시도하거나, 기존 계정으로 로그인해주세요.';
                     } else if (errorData.message) {
                         errorMessage = errorData.message;
                     }
