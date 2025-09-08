@@ -96,8 +96,9 @@ export default {
       const year = currentDate.value.getFullYear();
       const month = currentDate.value.getMonth();
       const today = new Date();
-      const minDateObj = props.minDate ? new Date(props.minDate) : null;
-      const maxDateObj = props.maxDate ? new Date(props.maxDate) : null;
+      // 문자열 날짜를 로컬 시간대 기준으로 정확하게 변환
+      const minDateObj = props.minDate ? new Date(props.minDate + 'T00:00:00') : null;
+      const maxDateObj = props.maxDate ? new Date(props.maxDate + 'T23:59:59') : null;
 
       // 현재 월의 첫 번째 날
       const firstDay = new Date(year, month, 1);
@@ -119,7 +120,11 @@ export default {
         let isDisabled = false;
         if (minDateObj && current < minDateObj) isDisabled = true;
         if (maxDateObj && current > maxDateObj) isDisabled = true;
-        if (current < today && !isToday) isDisabled = true;
+        
+        // 오늘 이전 날짜는 비활성화 (오늘은 포함)
+        const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const currentDateOnly = new Date(current.getFullYear(), current.getMonth(), current.getDate());
+        if (currentDateOnly < todayDateOnly) isDisabled = true;
 
         // 로컬 시간대 기준으로 날짜 문자열 생성
         const currentYear = current.getFullYear();
